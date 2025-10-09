@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Pgsql=Host=postgres;Port=5432;Database=te4it;Username=te4it_admin;Password=pA8^VJN{>%kN,a9z
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - te4it-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=https://localhost:5001
+    depends_on:
+      - backend
+    networks:
+      - te4it-network
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://te4it_admin:pA8^VJN{>%kN,a9z@postgres:5432/te4it_ai
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_API_URL=http://backend:5001
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - te4it-network
+
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=te4it
+      - POSTGRES_USER=te4it_admin
+      - POSTGRES_PASSWORD=pA8^VJN{>%kN,a9z
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - te4it-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - te4it-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+      - ai-service
+    networks:
+      - te4it-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  te4it-network:
+    driver: bridge

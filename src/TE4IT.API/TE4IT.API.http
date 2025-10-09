@@ -1,0 +1,6 @@
+@TE4IT.API_HostAddress = http://localhost:5184
+
+GET {{TE4IT.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
