@@ -18,30 +18,26 @@ dotnet run
 - **URL**: https://localhost:5001
 - **Swagger**: https://localhost:5001/swagger
 
-### Frontend (React)
+### Frontend (React) - *Geliştirilecek*
 ```bash
 cd frontend
-npm install
-npm start
+# Frontend developer tarafından React ile oluşturulacak
+# Detaylar için: frontend/README.md
 ```
-- **URL**: http://localhost:3000
 
-### Mobile (React Native)
+### Mobile (Android) - *Geliştirilecek*
 ```bash
 cd mobile
-npm install
-npx react-native run-android
-# veya
-npx react-native run-ios
+# Mobile developer tarafından Android (Kotlin/Java) ile oluşturulacak
+# Detaylar için: mobile/README.md
 ```
 
-### AI Service (Python/FastAPI)
+### AI Service (Python/FastAPI) - *Geliştirilecek*
 ```bash
 cd ai-service
-pip install -r requirements.txt
-uvicorn main:app --reload
+# AI developer tarafından Python/FastAPI ile oluşturulacak
+# Detaylar için: ai-service/README.md
 ```
-- **URL**: http://localhost:8000
 
 ## 📁 Project Structure
 
@@ -53,9 +49,9 @@ TE4IT/
 │   ├── TE4IT.Domain/        # Domain Layer
 │   ├── TE4IT.Infrastructure/# Infrastructure Layer
 │   └── TE4IT.Persistence/   # Data Access Layer
-├── 📁 frontend/             # React Web App
-├── 📁 mobile/               # React Native App
-├── 📁 ai-service/           # Python AI/ML Service
+├── 📁 frontend/             # React Web App (geliştirilecek)
+├── 📁 mobile/               # Android App (geliştirilecek)
+├── 📁 ai-service/           # Python AI/ML Service (geliştirilecek)
 ├── 📁 docs/                 # Documentation
 ├── 📁 shared/               # Shared resources
 ├── 📁 infrastructure/        # DevOps & Deployment
@@ -159,13 +155,17 @@ Content-Type: application/json
 cd src
 dotnet test
 
-# Frontend tests
+# Frontend tests (geliştirilecek)
 cd frontend
-npm test
+# Frontend developer tarafından eklenir
 
-# AI service tests
+# Mobile tests (geliştirilecek)
+cd mobile
+# Mobile developer tarafından eklenir
+
+# AI service tests (geliştirilecek)
 cd ai-service
-pytest
+# AI developer tarafından eklenir
 ```
 
 ## 📝 Contributing

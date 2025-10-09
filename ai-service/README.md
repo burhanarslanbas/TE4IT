@@ -1,71 +1,35 @@
-# TE4IT AI Service
+# AI Service Development
 
-FastAPI-based AI/ML service for project management analysis and automation.
+Bu klasör AI/ML servisi için ayrılmıştır.
 
-## Features
+## 📋 Görevler
 
-- **Project Analysis**: Analyze project descriptions and requirements
-- **Task Time Estimation**: ML-based time estimation for tasks
-- **Risk Assessment**: Identify potential project risks
-- **Smart Recommendations**: Suggest improvements and optimizations
-- **Natural Language Processing**: Process project documentation
+- [ ] AI service projesi oluştur (Python/FastAPI)
+- [ ] ML modelleri entegre et
+- [ ] Backend API entegrasyonu
+- [ ] Project analysis algoritmaları
+- [ ] Task estimation modelleri
+- [ ] Risk assessment sistemi
+- [ ] Testing setup
+- [ ] Model deployment
 
-## Quick Start
+## 🚀 Başlangıç
 
+### 1. Proje Oluşturma
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Python virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# veya
+venv\Scripts\activate     # Windows
 
-# Run development server
-uvicorn main:app --reload
-
-# Run tests
-pytest
-
-# Format code
-black .
-isort .
+# FastAPI projesi oluştur
+pip install fastapi uvicorn
 ```
 
-## API Endpoints
-
-### Health Check
-- `GET /health` - Service health status
-
-### Project Analysis
-- `POST /analyze/project` - Analyze project data
-- `POST /analyze/requirements` - Analyze requirements
-
-### Task Management
-- `POST /estimate/time` - Estimate task completion time
-- `POST /estimate/complexity` - Assess task complexity
-
-### Risk Assessment
-- `POST /assess/risks` - Identify project risks
-- `POST /assess/dependencies` - Analyze task dependencies
-
-## Environment Variables
-
+### 2. Temel Yapı
 ```bash
-# Database
-DATABASE_URL=postgresql://user:pass@localhost/te4it_ai
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Backend API
-BACKEND_API_URL=https://localhost:5001
-BACKEND_API_KEY=your_api_key
-
-# Model Configuration
-MODEL_PATH=./models/
-CACHE_TTL=3600
-```
-
-## Development
-
-### Project Structure
-```
+# Proje klasör yapısı
 ai-service/
 ├── main.py              # FastAPI app
 ├── models/              # ML models
@@ -77,40 +41,137 @@ ai-service/
 └── requirements.txt     # Dependencies
 ```
 
-### Adding New Features
+## 🔗 Backend API Entegrasyonu
 
-1. Create new service in `services/`
-2. Add API route in `api/`
-3. Define schemas in `schemas/`
-4. Write tests in `tests/`
-5. Update documentation
+Backend API şu adreste çalışıyor:
+- **URL**: https://localhost:5001
+- **Swagger**: https://localhost:5001/swagger
 
-## Integration with Backend
-
-The AI service integrates with the .NET backend through HTTP API calls:
+### Backend'den AI Service'e İstekler
+Backend'den şu endpoint'lere istekler gelecek:
 
 ```python
-# Example: Analyze project
-async def analyze_project(project_id: str):
-    # Fetch project data from backend
-    project_data = await fetch_project_from_backend(project_id)
-    
-    # Run AI analysis
-    analysis = await run_analysis(project_data)
-    
-    # Send results back to backend
-    await send_results_to_backend(project_id, analysis)
+# Backend'den gelecek istekler
+POST /analyze/project
+POST /estimate/time  
+POST /assess/risks
+GET /health
 ```
 
-## Deployment
+### Örnek Response Format
+```python
+# Project Analysis Response
+{
+    "project_id": "uuid",
+    "complexity_score": 0.7,
+    "estimated_duration_days": 30,
+    "risk_level": "medium",
+    "recommendations": ["Break down tasks", "Add buffer time"],
+    "analyzed_at": "2024-01-01T00:00:00Z"
+}
+
+# Task Estimation Response  
+{
+    "task_id": "uuid",
+    "estimated_hours": 8,
+    "confidence_score": 0.8,
+    "complexity_assessment": "medium",
+    "estimated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+## 📚 Dokümantasyon
+
+Detaylı entegrasyon rehberi için:
+- [Ana README](../README.md)
+- [AI Entegrasyon Rehberi](../docs/AI_INTEGRATION.md)
+- [Geliştirme Rehberi](../docs/DEVELOPMENT.md)
+
+## 🛠️ Önerilen Teknolojiler
+
+- **Framework**: FastAPI
+- **Language**: Python 3.9+
+- **ML Libraries**: scikit-learn, pandas, numpy
+- **Deep Learning**: PyTorch, TensorFlow (opsiyonel)
+- **Database**: PostgreSQL, Redis
+- **Testing**: pytest
+- **Deployment**: Docker, uvicorn
+
+## 🤖 AI/ML Özellikleri
+
+### Project Analysis
+- Proje karmaşıklığı analizi
+- Süre tahmini
+- Risk değerlendirmesi
+- Öneriler
+
+### Task Estimation
+- Görev süre tahmini
+- Karmaşıklık analizi
+- Bağımlılık analizi
+
+### Risk Assessment
+- Proje risk faktörleri
+- Mitigation önerileri
+- Trend analizi
+
+## 🔧 Development Setup
+
+1. Python 3.9+ kurulumu
+2. Virtual environment
+3. Dependencies kurulumu
+4. IDE setup (VS Code/PyCharm)
+
+## 📦 Build & Deployment
+
+### Local Development
+```bash
+uvicorn main:app --reload
+```
 
 ### Docker
 ```bash
-docker build -t te4it-ai-service .
-docker run -p 8000:8000 te4it-ai-service
+docker build -t ai-service .
+docker run -p 8000:8000 ai-service
 ```
 
 ### Production
+- Cloud deployment (AWS/GCP/Azure)
+- Model serving
+- Monitoring & logging
+
+## 🧪 Testing
+
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+# Unit tests
+pytest tests/
+
+# API tests
+pytest tests/api/
+
+# Model tests
+pytest tests/models/
 ```
+
+## 📊 Model Management
+
+- Model versioning
+- A/B testing
+- Performance monitoring
+- Model retraining
+
+## 🔒 Security
+
+- API authentication
+- Input validation
+- Rate limiting
+- Data privacy
+
+## 📈 Performance
+
+- Caching strategies
+- Async processing
+- Load balancing
+- Resource optimization
+
+İyi kodlamalar! 🚀
