@@ -6,6 +6,14 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
 {
     public RegisterCommandValidator()
     {
+        RuleFor(x => x.UserName)
+            .NotEmpty()
+            .WithMessage("Kullanıcı adı zorunludur.")
+            .MaximumLength(100)
+            .WithMessage("Kullanıcı adı en fazla 100 karakter olabilir.")
+            .Matches(@"^[a-zA-Z0-9_]+$")
+            .WithMessage("Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.");
+
         RuleFor(x => x.Email)
             .NotEmpty()
             .WithMessage("E-posta adresi zorunludur.")
@@ -17,16 +25,10 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
         RuleFor(x => x.Password)
             .NotEmpty()
             .WithMessage("Şifre zorunludur.")
-            .MinimumLength(8)
-            .WithMessage("Şifre en az 8 karakter olmalıdır.")
+            .MinimumLength(6)
+            .WithMessage("Şifre en az 6 karakter olmalıdır.")
             .MaximumLength(100)
-            .WithMessage("Şifre en fazla 100 karakter olabilir.")
-            .Matches(@"[A-Z]")
-            .WithMessage("Şifre en az bir büyük harf içermelidir.")
-            .Matches(@"[a-z]")
-            .WithMessage("Şifre en az bir küçük harf içermelidir.")
-            .Matches(@"[0-9]")
-            .WithMessage("Şifre en az bir rakam içermelidir.");
+            .WithMessage("Şifre en fazla 100 karakter olabilir.");
     }
 }
 

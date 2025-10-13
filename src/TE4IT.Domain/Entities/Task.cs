@@ -2,7 +2,7 @@
 using TE4IT.Domain.Entities.Common;
 using TE4IT.Domain.Enums;
 using TE4IT.Domain.Events;
-using TE4IT.Domain.Exceptions;
+using TE4IT.Domain.Exceptions.Tasks;
 using TE4IT.Domain.ValueObjects;
 
 namespace TE4IT.Domain.Entities;

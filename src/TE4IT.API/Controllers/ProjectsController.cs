@@ -34,6 +34,7 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     /// Proje ID'sine göre detaylı bilgi getirir
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "ProjectRead")]
     [ProducesResponseType(typeof(ProjectResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -44,8 +45,8 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Yeni proje oluşturur
-    /// </summary>
+    /// Yeni proje oluşturur    
+    /// </summary> 
     [HttpPost]
     [Authorize(Policy = "ProjectCreate")]
     [ProducesResponseType(typeof(CreateProjectCommandResponse), StatusCodes.Status201Created)]
@@ -57,4 +58,3 @@ public class ProjectsController(IMediator mediator) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 }
-

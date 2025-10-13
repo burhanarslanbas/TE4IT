@@ -1,13 +1,20 @@
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using TE4IT.Application.Abstractions.Auth;
 
 namespace TE4IT.Application.Features.Auth.Commands.Refresh;
 
-public sealed class RefreshTokenCommandHandler(IRefreshTokenService refreshTokens, ITokenService tokenService, IUserInfoService userInfo, IRolePermissionService rolePermissions) : IRequestHandler<RefreshTokenCommand, RefreshTokenCommandResponse>
+public sealed class RefreshTokenCommandHandler(
+    IRefreshTokenService refreshTokens, 
+    ITokenService tokenService, 
+    IUserInfoService userInfo, 
+    IRolePermissionService rolePermissions,
+    IHttpContextAccessor httpContextAccessor) : IRequestHandler<RefreshTokenCommand, RefreshTokenCommandResponse>
 {
     public async Task<RefreshTokenCommandResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        var ip = "mediator"; // controller bağımsız
+        // IP adresini HttpContext'ten al
+        var ip = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var result = await refreshTokens.RefreshAsync(request.RefreshToken, ip, cancellationToken);
         if (result is null) throw new UnauthorizedAccessException();
 

@@ -22,11 +22,10 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
+    public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken ct)
     {
-        var result = await mediator.Send(new RegisterCommand(request.Email, request.Password), ct);
-        if (result is null) return BadRequest();
-        return Created($"/api/v1/users/{result.UserId}", result);
+        var result = await mediator.Send(command, ct);
+        return Created($"/api/v1/users/{result!.UserId}", result);
     }
 
     /// <summary>
@@ -35,10 +34,9 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken ct)
     {
-        var result = await mediator.Send(new LoginCommand(request.Email, request.Password), ct);
-        if (result is null) return Unauthorized();
+        var result = await mediator.Send(command, ct);
         return Ok(result);
     }
 
@@ -50,9 +48,9 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [EnableRateLimiting("fixed-refresh")]
     [ProducesResponseType(typeof(RefreshTokenCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command, CancellationToken ct)
     {
-        var response = await mediator.Send(new RefreshTokenCommand(request.RefreshToken), ct);
+        var response = await mediator.Send(command, ct);
         return Ok(response);
     }
 
@@ -63,27 +61,10 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Revoke([FromBody] RefreshRequest request, CancellationToken ct)
+    public async Task<IActionResult> Revoke([FromBody] RevokeRefreshTokenCommand command, CancellationToken ct)
     {
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var ok = await mediator.Send(new RevokeRefreshTokenCommand(request.RefreshToken, "user requested", ip), ct);
+        var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
     }
 }
-
-/// <summary>
-/// Kayıt request DTO
-/// </summary>
-public sealed record RegisterRequest(string Email, string Password);
-
-/// <summary>
-/// Giriş request DTO
-/// </summary>
-public sealed record LoginRequest(string Email, string Password);
-
-/// <summary>
-/// Token yenileme request DTO
-/// </summary>
-public sealed record RefreshRequest(string RefreshToken);
-

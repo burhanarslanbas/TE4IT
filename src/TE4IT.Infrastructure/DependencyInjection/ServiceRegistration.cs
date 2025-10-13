@@ -21,8 +21,11 @@ public static class ServiceRegistration
         services.AddScoped<IPolicyAuthorizer, PolicyAuthorizer>();
         services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
-        // MediatR Handlers from Infrastructure (User/Role management handlers)
+        // MediatR Handlers from Infrastructure - Infrastructure katmanındaki handler'ları register et
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ServiceRegistration).Assembly));
+
+        // Add Role Seeder
+        services.AddScoped<TE4IT.Infrastructure.Auth.Services.RoleSeeder>();
 
         return services;
     }

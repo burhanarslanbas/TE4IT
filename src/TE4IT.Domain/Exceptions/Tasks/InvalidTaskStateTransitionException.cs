@@ -1,6 +1,7 @@
 using TE4IT.Domain.Enums;
+using TE4IT.Domain.Exceptions.Base;
 
-namespace TE4IT.Domain.Exceptions;
+namespace TE4IT.Domain.Exceptions.Tasks;
 
 /// <summary>
 /// Geçersiz görev durumu geçişi için exception

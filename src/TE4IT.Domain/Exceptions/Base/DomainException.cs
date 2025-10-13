@@ -1,4 +1,4 @@
-namespace TE4IT.Domain.Exceptions;
+namespace TE4IT.Domain.Exceptions.Base;
 
 /// <summary>
 /// Domain katmanı için temel exception sınıfı

@@ -1,4 +1,6 @@
-namespace TE4IT.Domain.Exceptions;
+using TE4IT.Domain.Exceptions.Base;
+
+namespace TE4IT.Domain.Exceptions.Common;
 
 /// <summary>
 /// İş kuralı ihlali durumlarında fırlatılan exception

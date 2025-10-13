@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using TE4IT.Persistence.Relational.Db;
 using TE4IT.Persistence.Relational.Identity;
+using TE4IT.Infrastructure.Auth.Services;
 
 namespace TE4IT.Infrastructure;
 
@@ -23,6 +25,9 @@ public static class AuthenticationRegistration
                 opt.Password.RequireUppercase = false;
                 opt.Password.RequireLowercase = false;
                 opt.User.RequireUniqueEmail = true;
+                opt.Lockout.AllowedForNewUsers = false;
+                opt.Lockout.MaxFailedAccessAttempts = 10;
+                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
@@ -53,12 +58,14 @@ public static class AuthenticationRegistration
                     ValidateAudience = true,
                     ValidateIssuerSigningKey = true,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero,
+                    ClockSkew = TimeSpan.FromMinutes(5), // 5 dakika tolerans
                     NameClaimType = ClaimTypes.NameIdentifier,
                     RoleClaimType = ClaimTypes.Role,
                     ValidIssuer = config["Jwt:Issuer"],
                     ValidAudience = config["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey))
+                    IssuerSigningKey = signingKey.CreateSymmetricKey(),
+                    RequireExpirationTime = true,
+                    RequireSignedTokens = true
                 };
 
                 options.Events = new JwtBearerEvents
@@ -89,7 +96,11 @@ public static class AuthenticationRegistration
                         // permissions_version denetimi: SecurityStamp değişmişse token reddedilir
                         var tokenVersion = context.Principal?.FindFirst("permissions_version")?.Value;
                         var currentVersion = await userManager.GetSecurityStampAsync(user);
-                        if (!string.IsNullOrEmpty(currentVersion) && tokenVersion != currentVersion)
+                        
+                        // Sadece her iki değer de varsa ve farklıysa fail et
+                        if (!string.IsNullOrEmpty(currentVersion) && 
+                            !string.IsNullOrEmpty(tokenVersion) && 
+                            tokenVersion != currentVersion)
                         {
                             context.Fail("Permissions version mismatch");
                             return;

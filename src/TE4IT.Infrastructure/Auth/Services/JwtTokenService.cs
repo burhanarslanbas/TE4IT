@@ -14,7 +14,7 @@ public sealed class JwtTokenService(IConfiguration configuration) : ITokenServic
     {
         var issuer = configuration["Jwt:Issuer"]!;
         var audience = configuration["Jwt:Audience"]!;
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"]!));
+        var signingKey = JwtKeyHelper.CreateSymmetricKey(configuration["Jwt:SigningKey"]!);
 
         var claims = new List<Claim>
         {
@@ -53,6 +53,23 @@ public sealed class JwtTokenService(IConfiguration configuration) : ITokenServic
         var bytes = RandomNumberGenerator.GetBytes(64);
         var token = Convert.ToBase64String(bytes);
         return (token, DateTime.UtcNow.AddDays(7));
+    }
+}
+
+internal static class JwtKeyHelper
+{
+    public static SymmetricSecurityKey CreateSymmetricKey(this string signingKey)
+    {
+        // If the configured key is Base64, decode it; otherwise use UTF8 bytes of the text
+        try
+        {
+            var raw = Convert.FromBase64String(signingKey);
+            return new SymmetricSecurityKey(raw);
+        }
+        catch
+        {
+            return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+        }
     }
 }
 

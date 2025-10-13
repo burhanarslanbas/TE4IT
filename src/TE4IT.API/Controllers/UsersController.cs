@@ -25,6 +25,7 @@ public class UsersController(IMediator mediator) : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Roles = "Administrator")]
     
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {

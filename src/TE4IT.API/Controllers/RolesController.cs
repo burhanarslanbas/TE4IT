@@ -14,8 +14,7 @@ namespace TE4IT.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
-// Yetkiyi açmak için aşağıdaki satırı aktif edin
-// [Authorize(Roles = "Administrator")]
+[Authorize(Roles = "Administrator")]
 public class RolesController(IMediator mediator) : ControllerBase
 {
     /// <summary>

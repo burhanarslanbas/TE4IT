@@ -9,11 +9,11 @@ using TE4IT.Persistence.Relational.Db;
 
 #nullable disable
 
-namespace TE4IT.Relational.Db.Migrations
+namespace TE4IT.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251006133700_AddRefreshTokenHash")]
-    partial class AddRefreshTokenHash
+    [Migration("20251009204626_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -8,7 +8,7 @@ using TE4IT.Persistence.Relational.Db;
 
 #nullable disable
 
-namespace TE4IT.Relational.Db.Migrations
+namespace TE4IT.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot

@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using TE4IT.Domain.Constants;
 using TE4IT.Domain.Entities.Common;
-using TE4IT.Domain.Exceptions;
+using TE4IT.Domain.Exceptions.Common;
 
 namespace TE4IT.Domain.ValueObjects;
 

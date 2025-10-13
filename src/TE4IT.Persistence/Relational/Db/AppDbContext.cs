@@ -20,6 +20,16 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public DbSet<TaskRelation> TaskRelations => Set<TaskRelation>();
     public DbSet<TE4IT.Persistence.Relational.Identity.RefreshToken> RefreshTokens => Set<TE4IT.Persistence.Relational.Identity.RefreshToken>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // CommandTimeout ayarı - Migration'lar için 2 dakika
+            optionsBuilder.UseNpgsql(options => options.CommandTimeout(120));
+        }
+        base.OnConfiguring(optionsBuilder);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

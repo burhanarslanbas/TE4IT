@@ -1,5 +1,5 @@
 using TE4IT.Domain.Entities.Common;
-using TE4IT.Domain.Exceptions;
+using TE4IT.Domain.Exceptions.Tasks;
 
 namespace TE4IT.Domain.ValueObjects;
 

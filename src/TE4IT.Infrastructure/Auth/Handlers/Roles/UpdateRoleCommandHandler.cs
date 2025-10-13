@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using TE4IT.Application.Features.Auth.Commands.Roles.UpdateRole;
-using TE4IT.Domain.Exceptions;
+using TE4IT.Domain.Exceptions.Common;
 
 namespace TE4IT.Infrastructure.Auth.Handlers.Roles;
 
