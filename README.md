@@ -3,7 +3,7 @@
 ## 🏗️ Architecture
 - **Backend**: .NET 9 Web API (Clean Architecture + CQRS)
 - **Frontend**: React + TypeScript
-- **Mobile**: React Native
+- **Mobile**: Android (Kotlin)
 - **AI Service**: Python/FastAPI
 - **Database**: PostgreSQL
 
