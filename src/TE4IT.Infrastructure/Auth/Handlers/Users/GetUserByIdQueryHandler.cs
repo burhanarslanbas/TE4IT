@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using TE4IT.Application.Features.Auth.Queries.Users.GetUserById;
-using TE4IT.Persistence.Relational.Identity;
+using TE4IT.Persistence.Common.Identity;
 
 namespace TE4IT.Infrastructure.Auth.Handlers.Users;
 

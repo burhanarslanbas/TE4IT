@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using TE4IT.Application.Abstractions.Auth;
+using TE4IT.Persistence.Common.Identity;
 using TE4IT.Domain.Constants;
 using TE4IT.Domain.Exceptions.Auth;
-using TE4IT.Persistence.Relational.Identity;
 
 namespace TE4IT.Infrastructure.Auth.Services;
 
@@ -32,9 +32,9 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
             NormalizedEmail = email.ToUpperInvariant(),
             EmailConfirmed = true
         };
-        
+
         var result = await userManager.CreateAsync(user, password);
-        if (!result.Succeeded) 
+        if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             throw new UserRegistrationFailedException(errors);
@@ -56,7 +56,7 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
     public async Task<Guid> ValidateCredentialsAsync(string email, string password, CancellationToken ct)
     {
         var user = await userManager.FindByEmailAsync(email);
-        if (user is null) 
+        if (user is null)
         {
             throw new InvalidCredentialsException(email);
         }
@@ -68,6 +68,26 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
         }
 
         return user.Id;
+    }
+
+    public async Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+            return null;
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+            return false;
+
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+        return result.Succeeded;
     }
 }
 

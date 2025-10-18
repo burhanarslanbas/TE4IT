@@ -5,10 +5,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
-using System.Text;
-using TE4IT.Persistence.Relational.Db;
-using TE4IT.Persistence.Relational.Identity;
 using TE4IT.Infrastructure.Auth.Services;
+using TE4IT.Persistence.Common.Contexts;
+using TE4IT.Persistence.Common.Identity;
 
 namespace TE4IT.Infrastructure;
 
@@ -96,10 +95,10 @@ public static class AuthenticationRegistration
                         // permissions_version denetimi: SecurityStamp değişmişse token reddedilir
                         var tokenVersion = context.Principal?.FindFirst("permissions_version")?.Value;
                         var currentVersion = await userManager.GetSecurityStampAsync(user);
-                        
+
                         // Sadece her iki değer de varsa ve farklıysa fail et
-                        if (!string.IsNullOrEmpty(currentVersion) && 
-                            !string.IsNullOrEmpty(tokenVersion) && 
+                        if (!string.IsNullOrEmpty(currentVersion) &&
+                            !string.IsNullOrEmpty(tokenVersion) &&
                             tokenVersion != currentVersion)
                         {
                             context.Fail("Permissions version mismatch");

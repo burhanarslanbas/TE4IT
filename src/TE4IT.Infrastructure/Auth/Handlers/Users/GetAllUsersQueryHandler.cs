@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Auth.Queries.Users.GetAllUsers;
 using TE4IT.Application.Features.Auth.Queries.Users.GetUserById;
-using TE4IT.Persistence.Relational.Identity;
+using TE4IT.Persistence.Common.Identity;
 
 namespace TE4IT.Infrastructure.Auth.Handlers.Users;
 
