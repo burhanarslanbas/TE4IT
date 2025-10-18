@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_9"]
+
+[phases.build]
+cmds = ["cd src/TE4IT.API && dotnet restore && dotnet publish -c Release -o out"]
+
+[start]
+cmd = "cd src/TE4IT.API/out && dotnet TE4IT.API.dll"
