@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using TE4IT.Application.Abstractions.Auth;
-using TE4IT.Persistence.Relational.Identity;
+using TE4IT.Persistence.Common.Identity;
 using AppUserInfo = TE4IT.Application.Abstractions.Auth.UserInfo;
 
 namespace TE4IT.Infrastructure.Auth.Services;

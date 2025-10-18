@@ -1,10 +1,9 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace TE4IT.Migrations
+namespace TE4IT.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

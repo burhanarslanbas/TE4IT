@@ -3,9 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using TE4IT.Application.Features.Auth.Commands.Login;
-using TE4IT.Application.Features.Auth.Commands.Refresh;
+using TE4IT.Application.Features.Auth.Commands.RefreshToken;
 using TE4IT.Application.Features.Auth.Commands.Register;
-using TE4IT.Application.Features.Auth.Commands.Revoke;
+using TE4IT.Application.Features.Auth.Commands.RevokeRefreshToken;
+using System.Net;
+using TE4IT.Application.Features.Auth.Commands.ResetPassword;
+using TE4IT.Application.Abstractions.Auth;
+using TE4IT.Application.Abstractions.Email;
 
 namespace TE4IT.API.Controllers;
 
@@ -43,12 +47,12 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     /// <summary>
     /// Access token'ı yeniler
     /// </summary>
-    [HttpPost("refresh")]
+    [HttpPost("refreshToken")]
     [AllowAnonymous]
     [EnableRateLimiting("fixed-refresh")]
     [ProducesResponseType(typeof(RefreshTokenCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command, CancellationToken ct)
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command, CancellationToken ct)
     {
         var response = await mediator.Send(command, ct);
         return Ok(response);
@@ -57,14 +61,61 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     /// <summary>
     /// Refresh token'ı iptal eder
     /// </summary>
-    [HttpPost("revoke")]
+    [HttpPost("revokeRefreshToken")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Revoke([FromBody] RevokeRefreshTokenCommand command, CancellationToken ct)
+    public async Task<IActionResult> RevokeRefreshToken([FromBody] RevokeRefreshTokenCommand command, CancellationToken ct)
     {
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
     }
+
+    /// <summary>
+    /// Şifre sıfırlama linki gönderir (kullanıcı var/yok detayını sızdırmaz)
+    /// </summary>
+    [HttpPost("forgotPassword")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, [FromServices] IUserAccountService accounts, [FromServices] IEmailSender email, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Email))
+            return Accepted();
+
+        var token = await accounts.GeneratePasswordResetTokenAsync(request.Email, ct);
+        if (string.IsNullOrEmpty(token))
+            return Accepted();
+
+        var tokenEncoded = WebUtility.UrlEncode(token);
+        var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={tokenEncoded}";
+        var html = $"<p>Şifrenizi sıfırlamak için <a href=\"{resetLink}\">buraya</a> tıklayın.</p>";
+        await email.SendAsync(request.Email, "Şifre Sıfırlama", html, ct);
+        return Accepted();
+    }
+
+    /// <summary>
+    /// Token ile şifreyi sıfırlar
+    /// </summary>
+    [HttpPost("resetPassword")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ResetPasswordCommandResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command, CancellationToken ct)
+    {
+        if (command is null)
+            return BadRequest();
+
+        var decodedToken = WebUtility.UrlDecode(command.Token);
+        var normalized = command with { Token = decodedToken ?? command.Token };
+        var result = await mediator.Send(normalized, ct);
+        if (!result.Success)
+            return BadRequest(result.Message);
+        return Ok(result);
+    }
+}
+
+public sealed class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
 }

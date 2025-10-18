@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TE4IT.Persistence.Relational.Db;
+using TE4IT.Persistence.Common.Contexts;
 
 #nullable disable
 
-namespace TE4IT.Migrations
+namespace TE4IT.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20251009204626_InitialCreate")]
@@ -377,7 +377,7 @@ namespace TE4IT.Migrations
                     b.ToTable("UseCases");
                 });
 
-            modelBuilder.Entity("TE4IT.Persistence.Relational.Db.OutboxMessage", b =>
+            modelBuilder.Entity("TE4IT.Persistence.Common.Entities.Relational.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -410,7 +410,7 @@ namespace TE4IT.Migrations
                     b.ToTable("OutboxMessage");
                 });
 
-            modelBuilder.Entity("TE4IT.Persistence.Relational.Identity.AppUser", b =>
+            modelBuilder.Entity("TE4IT.Persistence.Common.Identity.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -475,7 +475,7 @@ namespace TE4IT.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("TE4IT.Persistence.Relational.Identity.RefreshToken", b =>
+            modelBuilder.Entity("TE4IT.Persistence.Common.Identity.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -541,7 +541,7 @@ namespace TE4IT.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("TE4IT.Persistence.Relational.Identity.AppUser", null)
+                    b.HasOne("TE4IT.Persistence.Common.Identity.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -550,7 +550,7 @@ namespace TE4IT.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("TE4IT.Persistence.Relational.Identity.AppUser", null)
+                    b.HasOne("TE4IT.Persistence.Common.Identity.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -565,7 +565,7 @@ namespace TE4IT.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TE4IT.Persistence.Relational.Identity.AppUser", null)
+                    b.HasOne("TE4IT.Persistence.Common.Identity.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
