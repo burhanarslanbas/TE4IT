@@ -98,6 +98,46 @@ dotnet run
 **🌐 Access Points:**
 - **API**: https://localhost:5001
 - **Swagger UI**: https://localhost:5001/swagger
+
+---
+
+## 🌐 **Live Deployment**
+
+### **🚀 Railway Deployment**
+
+API'miz Railway'de canlı olarak çalışmaktadır:
+
+- **🌍 Live API**: `https://te4it-api-production.up.railway.app`
+- **📚 Swagger UI**: `https://te4it-api-production.up.railway.app/swagger`
+- **🔐 Auth Endpoints**: `https://te4it-api-production.up.railway.app/api/auth/*`
+
+### **📱 Frontend/Mobile Integration**
+
+Arkadaşlarınız için API entegrasyonu:
+
+```javascript
+// Frontend'de kullanım
+const API_BASE_URL = 'https://te4it-api-production.up.railway.app';
+
+// Login örneği
+const login = async (email, password) => {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  return response.json();
+};
+```
+
+```kotlin
+// Android'de kullanım
+val apiBaseUrl = "https://te4it-api-production.up.railway.app"
+
+// Retrofit ile
+@POST("api/auth/login")
+suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+```
 - **Health Check**: https://localhost:5001/health
 
 ---
