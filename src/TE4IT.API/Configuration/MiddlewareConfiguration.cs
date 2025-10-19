@@ -36,10 +36,8 @@ public static class MiddlewareConfiguration
     
     private static WebApplication UseEnvironmentSpecificMiddleware(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwaggerWithUI(redirectRoot: true);
-        }
+        // Swagger'ı hem Development hem de Production'da aç
+        app.UseSwaggerWithUI(redirectRoot: true);
         
         return app;
     }

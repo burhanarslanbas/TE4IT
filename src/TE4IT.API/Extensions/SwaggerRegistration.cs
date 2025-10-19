@@ -9,7 +9,29 @@ public static class SwaggerRegistration
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "TE4IT API", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo 
+            { 
+                Title = "TE4IT API", 
+                Version = "v1",
+                Description = "Task Management API for TE4IT Project",
+                Contact = new OpenApiContact
+                {
+                    Name = "TE4IT Team",
+                    Email = "infoarslanbas@gmail.com"
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "MIT License"
+                }
+            });
+            
+            // Azure App Service için server bilgisi ekle
+            c.AddServer(new OpenApiServer
+            {
+                Url = "https://te4it-api.azurewebsites.net",
+                Description = "Azure App Service Production Server"
+            });
+            
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -17,7 +39,7 @@ public static class SwaggerRegistration
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Bearer {token}"
+                Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
             });
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {

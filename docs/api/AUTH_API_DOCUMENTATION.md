@@ -2,7 +2,8 @@
 
 **Sürüm:** 1.0  
 **Tarih:** Ocak 2025  
-**Base URL:** `https://localhost:5001/api/v1/auth`
+**Base URL (Production):** `https://te4it-api.azurewebsites.net/api/v1/auth`  
+**Base URL (Development):** `https://localhost:5001/api/v1/auth`
 
 ---
 
@@ -97,7 +98,18 @@ sequenceDiagram
 }
 ```
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "johndoe",
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/register" \
   -H "Content-Type: application/json" \
@@ -136,7 +148,17 @@ curl -X POST "https://localhost:5001/api/v1/auth/register" \
 }
 ```
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/login" \
   -H "Content-Type: application/json" \
@@ -171,7 +193,16 @@ curl -X POST "https://localhost:5001/api/v1/auth/login" \
 }
 ```
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/refreshToken" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "your_refresh_token_here"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/refreshToken" \
   -H "Content-Type: application/json" \
@@ -199,7 +230,17 @@ curl -X POST "https://localhost:5001/api/v1/auth/refreshToken" \
 
 **Response (204 No Content):** Başarılı iptal
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/revokeRefreshToken" \
+  -H "Authorization: Bearer your_access_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "refresh_token_to_revoke"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/revokeRefreshToken" \
   -H "Authorization: Bearer your_access_token" \
@@ -226,7 +267,16 @@ curl -X POST "https://localhost:5001/api/v1/auth/revokeRefreshToken" \
 
 **Response (202 Accepted):** Her zaman başarılı döner (güvenlik için)
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/forgotPassword" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/forgotPassword" \
   -H "Content-Type: application/json" \
@@ -260,7 +310,18 @@ curl -X POST "https://localhost:5001/api/v1/auth/forgotPassword" \
 }
 ```
 
-**cURL Örneği:**
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/resetPassword" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "token": "reset_token_from_email",
+    "newPassword": "NewSecurePass123!"
+  }'
+```
+
+**cURL Örneği (Development):**
 ```bash
 curl -X POST "https://localhost:5001/api/v1/auth/resetPassword" \
   -H "Content-Type: application/json" \
@@ -375,7 +436,7 @@ public sealed class ForgotPasswordRequest
 
 ```javascript
 class TE4ITAuth {
-    constructor(baseUrl = 'https://localhost:5001') {
+    constructor(baseUrl = 'https://te4it-api.azurewebsites.net') {
         this.baseUrl = baseUrl;
         this.accessToken = null;
         this.refreshToken = null;
@@ -656,11 +717,12 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
 ## 🧪 Test Senaryoları
 
 ### Swagger UI ile Test
-1. `https://localhost:5001/swagger` adresine gidin
-2. Auth endpoint'lerini test edin
-3. JWT token'ı kopyalayın
-4. "Authorize" butonuna tıklayın
-5. `Bearer {token}` formatında token'ı girin
+1. **Production**: `https://te4it-api.azurewebsites.net/swagger` adresine gidin
+2. **Development**: `https://localhost:5001/swagger` adresine gidin
+3. Auth endpoint'lerini test edin
+4. JWT token'ı kopyalayın
+5. "Authorize" butonuna tıklayın
+6. `Bearer {token}` formatında token'ı girin
 
 ### Postman Collection
 ```json
@@ -672,7 +734,7 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://localhost:5001"
+      "value": "https://te4it-api.azurewebsites.net"
     },
     {
       "key": "accessToken",
@@ -734,9 +796,10 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
 4. Token sürelerini kontrol edin
 
 **İletişim:**
-- **Email**: team@te4it.com
+- **Email**: infoarslanbas@gmail.com
 - **GitHub**: https://github.com/burhanarslanbas/TE4IT
-- **Swagger UI**: https://localhost:5001/swagger
+- **Production Swagger**: https://te4it-api.azurewebsites.net/swagger
+- **Development Swagger**: https://localhost:5001/swagger
 
 ---
 

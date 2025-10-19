@@ -19,20 +19,22 @@ Bu klasör TE4IT API endpoint'leri ve kullanım kılavuzlarını içerir.
 
 ## 🚀 Hızlı Başlangıç
 
-### 1. API'yi Çalıştırın
+### 1. Production API'ye Erişim
+- **Live API**: `https://te4it-api.azurewebsites.net`
+- **Swagger UI**: `https://te4it-api.azurewebsites.net/swagger`
+
+### 2. Local Development
 ```bash
 cd src/TE4IT.API
 dotnet run
 ```
-
-### 2. Swagger UI'ya Erişin
-- Tarayıcıda: `https://localhost:5001/swagger`
-- API'leri interaktif olarak test edin
+- **Local API**: `https://localhost:5001`
+- **Local Swagger**: `https://localhost:5001/swagger`
 
 ### 3. Authentication Flow
 ```javascript
-// JavaScript örneği
-const auth = new TE4ITAuth('https://localhost:5001');
+// JavaScript örneği - Production
+const auth = new TE4ITAuth('https://te4it-api.azurewebsites.net');
 
 // Kayıt ol
 await auth.register('johndoe', 'john@example.com', 'Password123!');
@@ -46,9 +48,10 @@ const projects = await auth.makeAuthenticatedRequest('/api/v1/projects');
 
 ## 📚 API Genel Bilgileri
 
-### Base URL
+### Base URLs
 ```
-https://localhost:5001/api/v1
+Production: https://te4it-api.azurewebsites.net/api/v1
+Development: https://localhost:5001/api/v1
 ```
 
 ### Authentication
@@ -69,7 +72,8 @@ https://localhost:5001/api/v1
 ## 🔗 Hızlı Linkler
 
 - **[Authentication API](./AUTH_API_DOCUMENTATION.md)** - Detaylı auth dokümantasyonu
-- **[Swagger UI](https://localhost:5001/swagger)** - Interaktif API testi
+- **[Live Swagger UI](https://te4it-api.azurewebsites.net/swagger)** - Production API testi
+- **[Local Swagger UI](https://localhost:5001/swagger)** - Development API testi
 - **[Postman Collection](./postman/)** - Hazır API collection'ları (yakında)
 
 ## 📞 Destek
