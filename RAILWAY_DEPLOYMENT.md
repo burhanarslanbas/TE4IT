@@ -1,5 +1,9 @@
 # Railway Deployment Configuration
 
+## .NET 9.0 Configuration
+
+Bu proje .NET 9.0 kullanır ve Railway'de otomatik olarak algılanır.
+
 ## Environment Variables
 
 Aşağıdaki environment variables'ları Railway dashboard'da ayarlayın:
