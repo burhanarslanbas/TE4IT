@@ -103,13 +103,13 @@ dotnet run
 
 ## 🌐 **Live Deployment**
 
-### **🚀 Railway Deployment**
+### **🚀 Azure DevOps Deployment**
 
-API'miz Railway'de canlı olarak çalışmaktadır:
+API'miz Azure DevOps ile otomatik deploy edilmektedir:
 
-- **🌍 Live API**: `https://te4it-api-production.up.railway.app`
-- **📚 Swagger UI**: `https://te4it-api-production.up.railway.app/swagger`
-- **🔐 Auth Endpoints**: `https://te4it-api-production.up.railway.app/api/auth/*`
+- **🌍 Live API**: Azure App Service üzerinde çalışmaktadır
+- **📚 Swagger UI**: `/swagger` endpoint'i üzerinden erişilebilir
+- **🔐 Auth Endpoints**: `/api/auth/*` endpoint'leri aktif
 
 ### **📱 Frontend/Mobile Integration**
 
@@ -117,7 +117,7 @@ Arkadaşlarınız için API entegrasyonu:
 
 ```javascript
 // Frontend'de kullanım
-const API_BASE_URL = 'https://te4it-api-production.up.railway.app';
+const API_BASE_URL = 'https://your-azure-app.azurewebsites.net';
 
 // Login örneği
 const login = async (email, password) => {
@@ -132,7 +132,7 @@ const login = async (email, password) => {
 
 ```kotlin
 // Android'de kullanım
-val apiBaseUrl = "https://te4it-api-production.up.railway.app"
+val apiBaseUrl = "https://your-azure-app.azurewebsites.net"
 
 // Retrofit ile
 @POST("api/auth/login")
