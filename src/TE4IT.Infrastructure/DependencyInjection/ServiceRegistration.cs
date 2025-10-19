@@ -34,6 +34,15 @@ public static class ServiceRegistration
 
 		// Add Email Options (minimal config: Username + Password)
 		services.Configure<EmailOptions>(configuration.GetSection("Email"));
+		
+		// Azure App Service için environment variables'dan email settings oku
+		services.PostConfigure<EmailOptions>(opt =>
+		{
+			if (string.IsNullOrWhiteSpace(opt.Username))
+				opt.Username = configuration["EMAIL_USERNAME"] ?? "";
+			if (string.IsNullOrWhiteSpace(opt.Password))
+				opt.Password = configuration["EMAIL_PASSWORD"] ?? "";
+		});
 		services.PostConfigure<EmailOptions>(opt =>
 		{
 			// Sensible defaults for Gmail

@@ -12,9 +12,11 @@ public sealed class JwtTokenService(IConfiguration configuration) : ITokenServic
 {
     public (string accessToken, DateTime expiresAt) CreateAccessToken(Guid userId, string userName, string email, IEnumerable<string> roles, IEnumerable<string> permissions, string? permissionsVersion = null)
     {
-        var issuer = configuration["Jwt:Issuer"]!;
-        var audience = configuration["Jwt:Audience"]!;
-        var signingKey = JwtKeyHelper.CreateSymmetricKey(configuration["Jwt:SigningKey"]!);
+        // Azure App Service için environment variables'dan JWT settings oku
+        var issuer = configuration["Jwt:Issuer"] ?? configuration["JWT_ISSUER"]!;
+        var audience = configuration["Jwt:Audience"] ?? configuration["JWT_AUDIENCE"]!;
+        var signingKey = JwtKeyHelper.CreateSymmetricKey(
+            configuration["Jwt:SigningKey"] ?? configuration["JWT_SIGNING_KEY"]!);
 
         var claims = new List<Claim>
         {

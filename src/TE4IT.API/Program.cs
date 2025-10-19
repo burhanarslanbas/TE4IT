@@ -2,6 +2,9 @@ using TE4IT.API.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Azure App Service için environment variables'ları ekle
+builder.Configuration.AddEnvironmentVariables();
+
 // Service Registration - Clean ve organized
 builder.Services
     .AddApiServices()

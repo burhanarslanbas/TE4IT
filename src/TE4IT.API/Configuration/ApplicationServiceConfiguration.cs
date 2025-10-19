@@ -12,7 +12,13 @@ public static class ApplicationServiceConfiguration
         services
             .AddApplication()
             .AddInfrastructure(configuration)
-            .AddRelational(opt => opt.UseNpgsql(configuration.GetConnectionString("Pgsql")));
+            .AddRelational(opt => 
+            {
+                // Azure App Service için environment variable'dan connection string oku
+                var connectionString = configuration.GetConnectionString("Pgsql") ?? 
+                                    configuration["CONNECTION_STRING"];
+                opt.UseNpgsql(connectionString);
+            });
 
         return services;
     }

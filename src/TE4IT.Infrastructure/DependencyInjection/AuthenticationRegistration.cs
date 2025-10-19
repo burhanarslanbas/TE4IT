@@ -46,7 +46,9 @@ public static class AuthenticationRegistration
             };
         });
 
-        var signingKey = config["Jwt:SigningKey"]!;
+        var signingKey = config["Jwt:SigningKey"] ?? config["JWT_SIGNING_KEY"]!;
+        var issuer = config["Jwt:Issuer"] ?? config["JWT_ISSUER"]!;
+        var audience = config["Jwt:Audience"] ?? config["JWT_AUDIENCE"]!;
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -60,8 +62,8 @@ public static class AuthenticationRegistration
                     ClockSkew = TimeSpan.FromMinutes(5), // 5 dakika tolerans
                     NameClaimType = ClaimTypes.NameIdentifier,
                     RoleClaimType = ClaimTypes.Role,
-                    ValidIssuer = config["Jwt:Issuer"],
-                    ValidAudience = config["Jwt:Audience"],
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
                     IssuerSigningKey = signingKey.CreateSymmetricKey(),
                     RequireExpirationTime = true,
                     RequireSignedTokens = true
