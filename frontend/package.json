@@ -83,5 +83,5 @@
             "test": "echo \"Tests will be added in future releases\"",
             "test:e2e": "echo \"E2E tests will be added in future releases\"",
             "test:coverage": "echo \"Coverage tests will be added in future releases\""
-      },
+      }
 }
