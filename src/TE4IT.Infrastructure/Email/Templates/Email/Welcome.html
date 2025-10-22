@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoş Geldiniz - TE4IT</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .welcome-message {
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #555;
+        }
+        .features {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        .trial-info {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 TE4IT</div>
+            <p>Görev Yönetim Platformu</p>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Hoş Geldiniz!</h1>
+            
+            <p class="welcome-message">
+                Merhaba {{UserName}}!<br>
+                TE4IT ailesine katıldığınız için teşekkür ederiz. 
+                Görev yönetimi deneyiminiz başlıyor!
+            </p>
+            
+            <div class="trial-info">
+                <h3>🎉 Ücretsiz Deneme Sürümü</h3>
+                <p>14 gün boyunca tüm premium özellikleri ücretsiz deneyebilirsiniz!</p>
+            </div>
+            
+            <div class="features">
+                <h3>✨ Neler Yapabilirsiniz?</h3>
+                
+                <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <span>Projeler oluşturun ve yönetin</span>
+                </div>
+                
+                <div class="feature-item">
+                    <span class="feature-icon">✅</span>
+                    <span>Görevleri takip edin ve tamamlayın</span>
+                </div>
+                
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    <span>Ekip üyeleriyle işbirliği yapın</span>
+                </div>
+                
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>İlerleme raporlarını görüntüleyin</span>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{AppUrl}}" class="button">Hemen Başlayın</a>
+            </div>
+            
+            <p style="text-align: center; color: #666; font-size: 14px;">
+                Sorularınız için <a href="mailto:infoarslanbas@gmail.com">infoarslanbas@gmail.com</a> adresine yazabilirsiniz.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>Bu email otomatik olarak gönderilmiştir.</p>
+            <p>© 2024 TE4IT. Tüm hakları saklıdır.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -40,8 +40,8 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
             throw new UserRegistrationFailedException(errors);
         }
 
-        // Yeni kullanıcıya varsayılan rol ata
-        var roleResult = await userManager.AddToRoleAsync(user, RoleNames.Employee);
+        // Yeni kullanıcıya varsayılan rol ata (Trial kullanıcısı)
+        var roleResult = await userManager.AddToRoleAsync(user, RoleNames.Trial);
         if (!roleResult.Succeeded)
         {
             // Rol atama başarısız olursa kullanıcıyı sil
