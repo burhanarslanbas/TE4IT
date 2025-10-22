@@ -16,7 +16,7 @@ namespace TE4IT.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize]
 public class UsersController(IMediator mediator) : ControllerBase
 {
      /// <summary>
@@ -25,7 +25,6 @@ public class UsersController(IMediator mediator) : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Authorize(Roles = "Administrator")]
     
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -64,7 +63,6 @@ public class UsersController(IMediator mediator) : ControllerBase
     /// Kullanıcıya rol atar (Sadece Administrator)
     /// </summary>
     [HttpPost("{id:guid}/roles/{roleName}")]
-    //[Authorize(Roles = "Administrator")]
     [ProducesResponseType(typeof(AssignRoleToUserCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -83,7 +81,6 @@ public class UsersController(IMediator mediator) : ControllerBase
     /// Kullanıcıdan rol kaldırır (Sadece Administrator)
     /// </summary>
     [HttpDelete("{id:guid}/roles/{roleName}")]
-    [Authorize(Roles = "Administrator")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

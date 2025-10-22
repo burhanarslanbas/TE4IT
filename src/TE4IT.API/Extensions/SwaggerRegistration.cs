@@ -25,12 +25,24 @@ public static class SwaggerRegistration
                 }
             });
             
-            // Azure App Service için server bilgisi ekle
-            c.AddServer(new OpenApiServer
+            // Environment'a göre server bilgisi ekle
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (environment == "Development")
             {
-                Url = "https://te4it-api.azurewebsites.net",
-                Description = "Azure App Service Production Server"
-            });
+                c.AddServer(new OpenApiServer
+                {
+                    Url = "https://localhost:5001",
+                    Description = "Local Development Server"
+                });
+            }
+            else
+            {
+                c.AddServer(new OpenApiServer
+                {
+                    Url = "https://te4it-api.azurewebsites.net",
+                    Description = "Azure App Service Production Server"
+                });
+            }
             
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {

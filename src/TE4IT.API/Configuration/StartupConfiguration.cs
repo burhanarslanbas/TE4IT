@@ -7,7 +7,19 @@ public static class StartupConfiguration
 {
     public static async Task InitializeStartupAsync(this WebApplication app)
     {
-        await app.SeedDatabaseAsync();
+        // Configuration'dan seeding ayarını kontrol et
+        var configuration = app.Services.GetRequiredService<IConfiguration>();
+        var enableSeeding = configuration.GetValue<bool>("RoleSeeding:Enabled");
+        
+        if (enableSeeding)
+        {
+            await app.SeedDatabaseAsync();
+        }
+        else
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Role seeding is disabled. Set RoleSeeding:Enabled=true in appsettings to enable.");
+        }
     }
     
     private static async Task SeedDatabaseAsync(this WebApplication app)

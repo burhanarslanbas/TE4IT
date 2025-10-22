@@ -10,6 +10,7 @@ using System.Net;
 using TE4IT.Application.Features.Auth.Commands.ResetPassword;
 using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Abstractions.Email;
+using TE4IT.Application.Abstractions.Common;
 
 namespace TE4IT.API.Controllers;
 
@@ -78,7 +79,13 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("forgotPassword")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, [FromServices] IUserAccountService accounts, [FromServices] IEmailSender email, CancellationToken ct)
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request, 
+        [FromServices] IUserAccountService accounts, 
+        [FromServices] IEmailSender email, 
+        [FromServices] IEmailTemplateService emailTemplate,
+        [FromServices] IUrlService urlService,
+        CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request?.Email))
             return Accepted();
@@ -88,9 +95,15 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
             return Accepted();
 
         var tokenEncoded = WebUtility.UrlEncode(token);
-        var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={tokenEncoded}";
-        var html = $"<p>Şifrenizi sıfırlamak için <a href=\"{resetLink}\">buraya</a> tıklayın.</p>";
-        await email.SendAsync(request.Email, "Şifre Sıfırlama", html, ct);
+        
+        // Frontend URL'ini environment-aware olarak al
+        var frontendUrl = urlService.GetFrontendUrl();
+        var resetLink = $"{frontendUrl}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={tokenEncoded}";
+        
+        // Güzel email şablonu kullan
+        var htmlBody = emailTemplate.GetPasswordResetTemplate(resetLink, request.Email);
+        
+        await email.SendAsync(request.Email, "TE4IT - Şifre Sıfırlama", htmlBody, ct);
         return Accepted();
     }
 
