@@ -6,11 +6,9 @@ using TE4IT.Application.Features.Auth.Commands.Login;
 using TE4IT.Application.Features.Auth.Commands.RefreshToken;
 using TE4IT.Application.Features.Auth.Commands.Register;
 using TE4IT.Application.Features.Auth.Commands.RevokeRefreshToken;
-using System.Net;
+using TE4IT.Application.Features.Auth.Commands.ForgotPassword;
 using TE4IT.Application.Features.Auth.Commands.ResetPassword;
-using TE4IT.Application.Abstractions.Auth;
-using TE4IT.Application.Abstractions.Email;
-using TE4IT.Application.Abstractions.Common;
+using TE4IT.Application.Features.Auth.Commands.ChangePassword;
 
 namespace TE4IT.API.Controllers;
 
@@ -78,33 +76,11 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("forgotPassword")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> ForgotPassword(
-        [FromBody] ForgotPasswordRequest request, 
-        [FromServices] IUserAccountService accounts, 
-        [FromServices] IEmailSender email, 
-        [FromServices] IEmailTemplateService emailTemplate,
-        [FromServices] IUrlService urlService,
-        CancellationToken ct)
+    [ProducesResponseType(typeof(ForgotPasswordCommandResponse), StatusCodes.Status202Accepted)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request?.Email))
-            return Accepted();
-
-        var token = await accounts.GeneratePasswordResetTokenAsync(request.Email, ct);
-        if (string.IsNullOrEmpty(token))
-            return Accepted();
-
-        var tokenEncoded = WebUtility.UrlEncode(token);
-        
-        // Frontend URL'ini environment-aware olarak al
-        var frontendUrl = urlService.GetFrontendUrl();
-        var resetLink = $"{frontendUrl}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={tokenEncoded}";
-        
-        // Güzel email şablonu kullan
-        var htmlBody = emailTemplate.GetPasswordResetTemplate(resetLink, request.Email);
-        
-        await email.SendAsync(request.Email, "TE4IT - Şifre Sıfırlama", htmlBody, ct);
-        return Accepted();
+        var result = await mediator.Send(command, ct);
+        return Accepted(result);
     }
 
     /// <summary>
@@ -116,19 +92,25 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command, CancellationToken ct)
     {
-        if (command is null)
-            return BadRequest();
-
-        var decodedToken = WebUtility.UrlDecode(command.Token);
-        var normalized = command with { Token = decodedToken ?? command.Token };
-        var result = await mediator.Send(normalized, ct);
+        var result = await mediator.Send(command, ct);
         if (!result.Success)
             return BadRequest(result.Message);
         return Ok(result);
     }
-}
 
-public sealed class ForgotPasswordRequest
-{
-    public string Email { get; set; } = string.Empty;
+    /// <summary>
+    /// Uygulama içi şifre değiştirme (authenticated kullanıcılar için)
+    /// </summary>
+    [HttpPost("changePassword")]
+    [Authorize]
+    [ProducesResponseType(typeof(ChangePasswordCommandResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken ct)
+    {
+        var result = await mediator.Send(command, ct);
+        if (!result.Success)
+            return BadRequest(result.Message);
+        return Ok(result);
+    }
 }

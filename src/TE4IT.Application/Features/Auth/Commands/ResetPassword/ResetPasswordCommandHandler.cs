@@ -6,7 +6,8 @@ namespace TE4IT.Application.Features.Auth.Commands.ResetPassword;
 
 public sealed class ResetPasswordCommandHandler(
     IUserAccountService accounts,
-    IEmailSender emailSender) : IRequestHandler<ResetPasswordCommand, ResetPasswordCommandResponse>
+    IEmailSender emailSender,
+    IEmailTemplateService emailTemplate) : IRequestHandler<ResetPasswordCommand, ResetPasswordCommandResponse>
 {
     public async Task<ResetPasswordCommandResponse> Handle(ResetPasswordCommand request, CancellationToken ct)
     {
@@ -17,10 +18,17 @@ public sealed class ResetPasswordCommandHandler(
             return new ResetPasswordCommandResponse(false, "Şifre sıfırlama başarısız. Token geçersiz veya kullanıcı bulunamadı.");
         }
 
-        // İsteğe bağlı: bilgilendirme e-postası
-        var html = "<p>Şifreniz başarılı şekilde güncellendi.</p>";
-        await emailSender.SendAsync(request.Email, "Şifre Güncelleme", html, ct);
+        // Başarılı şifre sıfırlama email'i gönder
+        try
+        {
+            var htmlBody = emailTemplate.GetPasswordChangeNotificationTemplate(request.Email);
+            await emailSender.SendAsync(request.Email, "TE4IT - Şifre Sıfırlama Tamamlandı", htmlBody, ct);
+        }
+        catch
+        {
+            // Email gönderimi başarısız olsa bile şifre sıfırlama başarılı
+        }
 
-        return new ResetPasswordCommandResponse(true, "Şifre güncellendi.");
+        return new ResetPasswordCommandResponse(true, "Şifre başarıyla güncellendi.");
     }
 }

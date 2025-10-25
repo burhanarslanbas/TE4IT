@@ -8,8 +8,27 @@ Bu klasör TE4IT API endpoint'leri ve kullanım kılavuzlarını içerir.
 - **[AUTH_API_DOCUMENTATION.md](./AUTH_API_DOCUMENTATION.md)** - Kimlik doğrulama endpoint'leri
   - Kullanıcı kaydı ve girişi
   - Token yönetimi (JWT + Refresh Token)
-  - Şifre sıfırlama
+  - Şifre sıfırlama (Email ile)
+  - Uygulama içi şifre değiştirme
   - JavaScript, React Native, Kotlin örnekleri
+
+### 🎨 Frontend Entegrasyon Rehberi
+- **[FRONTEND_INTEGRATION_GUIDE.md](./FRONTEND_INTEGRATION_GUIDE.md)** - Frontend geliştiriciler için detaylı rehber
+  - Tüm auth endpoint'leri için adım adım rehberler
+  - React Context ve Hook'lar
+  - Email link handling (sadece web)
+  - Şifre sıfırlama süreci (forgotPassword + resetPassword)
+  - Güvenlik en iyi uygulamaları
+  - Test senaryoları
+
+### 📱 Mobil Entegrasyon Rehberi
+- **[MOBILE_INTEGRATION_GUIDE.md](./MOBILE_INTEGRATION_GUIDE.md)** - Mobil geliştiriciler için detaylı rehber
+  - Tüm auth endpoint'leri için adım adım rehberler
+  - Android (Kotlin) tam entegrasyonu
+  - iOS (Swift) entegrasyonu
+  - React Native entegrasyonu
+  - Şifre değiştirme (sadece changePassword)
+  - Web'e yönlendirme (şifremi unuttum)
 
 ### 🚧 Yakında Gelecek
 - **Projects API** - Proje yönetimi endpoint'leri
@@ -42,6 +61,15 @@ await auth.register('johndoe', 'john@example.com', 'Password123!');
 // Giriş yap
 await auth.login('john@example.com', 'Password123!');
 
+// Şifre sıfırlama isteği gönder
+await auth.forgotPassword('john@example.com');
+
+// Email'den gelen token ile şifre sıfırla
+await auth.resetPassword('john@example.com', 'token_from_email', 'NewPassword123!');
+
+// Uygulama içi şifre değiştir
+await auth.changePassword('CurrentPassword123!', 'NewPassword456!');
+
 // Authenticated request
 const projects = await auth.makeAuthenticatedRequest('/api/v1/projects');
 ```
@@ -68,13 +96,26 @@ Development: https://localhost:5001/api/v1
 - **Login**: Saatte 10 istek
 - **Register**: Saatte 5 istek
 - **Refresh Token**: Saatte 5 istek
+- **Forgot Password**: Saatte 5 istek
+- **Change Password**: Saatte 10 istek
 
 ## 🔗 Hızlı Linkler
 
+### 📚 Dokümantasyon
 - **[Authentication API](./AUTH_API_DOCUMENTATION.md)** - Detaylı auth dokümantasyonu
+- **[Frontend Entegrasyon](./FRONTEND_INTEGRATION_GUIDE.md)** - React, Vue, Angular rehberi
+- **[Mobil Entegrasyon](./MOBILE_INTEGRATION_GUIDE.md)** - Android, iOS, React Native rehberi
+
+### 🧪 Test ve Geliştirme
 - **[Live Swagger UI](https://te4it-api.azurewebsites.net/swagger)** - Production API testi
 - **[Local Swagger UI](https://localhost:5001/swagger)** - Development API testi
 - **[Postman Collection](./postman/)** - Hazır API collection'ları (yakında)
+
+### 🎯 Platform Spesifik
+- **React**: Context, Hook'lar, Email link handling, Şifre sıfırlama
+- **Android**: Kotlin, Retrofit, Web'e yönlendirme, Şifre değiştirme
+- **iOS**: Swift, URLSession, Keychain, Web'e yönlendirme
+- **React Native**: AsyncStorage, Linking, Web'e yönlendirme
 
 ## 📞 Destek
 

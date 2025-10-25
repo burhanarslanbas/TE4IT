@@ -14,4 +14,9 @@ public interface IEmailTemplateService
     /// Hoş geldin email şablonu
     /// </summary>
     string GetWelcomeTemplate(string userName, string email, string appUrl);
+    
+    /// <summary>
+    /// Şifre değişikliği bildirimi email şablonu
+    /// </summary>
+    string GetPasswordChangeNotificationTemplate(string email);
 }
