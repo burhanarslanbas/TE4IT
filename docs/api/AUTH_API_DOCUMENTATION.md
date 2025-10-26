@@ -905,6 +905,119 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
 - Güvenlik için kullanıcı var/yok bilgisi sızdırılmaz
 - Şifre değişikliği bildirimi otomatik email ile gönderilir
 
+### Role-Based Access Control (RBAC)
+
+TE4IT sistemi **7 temel rol** içerir:
+
+#### **1. Administrator (Sistem Yöneticisi)**
+- **Yetkiler:**
+  - ✅ Project.View - Tüm projeleri görüntüleme
+  - ✅ Project.Create - Proje oluşturma
+  - ✅ Project.Update - Proje güncelleme
+  - ✅ Project.Delete - Proje silme
+- **Açıklama:** Sistem genelinde tüm yetkilere sahiptir
+
+#### **2. OrganizationManager (Kurum Müdürü)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ✅ Project.Create - Proje oluşturma
+  - ✅ Project.Update - Proje güncelleme
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** Kurum düzeyinde proje yönetimi yapabilir
+
+#### **3. TeamLead (Ekip Lideri / Proje Yöneticisi)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ✅ Project.Update - Proje güncelleme
+  - ❌ Project.Create - Proje oluşturma (YOK)
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** Ekip seviyesinde proje yönetimi yapabilir
+
+#### **4. Employee (Çalışan / Katılımcı)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ❌ Project.Create - Proje oluşturma (YOK)
+  - ❌ Project.Update - Proje güncelleme (YOK)
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** Sadece atandığı projeleri görüntüleyebilir
+
+#### **5. Trainer (Eğitmen)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ❌ Project.Create - Proje oluşturma (YOK)
+  - ❌ Project.Update - Proje güncelleme (YOK)
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** Eğitim projelerini yönetebilir
+
+#### **6. Customer (Müşteri / Danışman)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ❌ Project.Create - Proje oluşturma (YOK)
+  - ❌ Project.Update - Proje güncelleme (YOK)
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** Müşteri olarak sadece ilgili projeleri görüntüleyebilir
+
+#### **7. Trial (Deneme Kullanıcısı / Potansiyel Müşteri)**
+- **Yetkiler:**
+  - ✅ Project.View - Projeleri görüntüleme
+  - ✅ Project.Create - Proje oluşturma
+  - ❌ Project.Update - Proje güncelleme (YOK)
+  - ❌ Project.Delete - Proje silme (YOK)
+- **Açıklama:** İlk kayıt olan tüm kullanıcılar bu role sahiptir
+
+### Default User Role
+- **Yeni kayıt:** Yeni kullanıcılar otomatik olarak `Trial` rolü alır
+- **Neden Trial?** Pazarlama stratejisi - kullanıcılar sistemi deneyebilir ve satın alma kararı verebilir
+
+### Role Assignment
+- Roller `RoleSeeder` servisi tarafından otomatik oluşturulur
+- Her role uygun permission claim'leri atanır
+- Role seeding `appsettings.Development.json` içinde `RoleSeeding:Enabled` ile kontrol edilir
+
+### Permission System
+```csharp
+// Permission Claims
+public static class Permissions
+{
+    public static class Project
+    {
+        public const string Create = "Project.Create";
+        public const string View = "Project.View";
+        public const string Update = "Project.Update";
+        public const string Delete = "Project.Delete";
+    }
+}
+```
+
+### Authorization Examples
+
+#### **Frontend'de Permission Kontrolü:**
+```javascript
+// JWT token'dan permission'ları al
+const token = localStorage.getItem('accessToken');
+const decoded = jwt.decode(token);
+const permissions = decoded['permission'] || [];
+
+// Permission kontrolü
+if (permissions.includes('Project.Create')) {
+    // Create project butonu göster
+}
+
+if (permissions.includes('Project.Delete')) {
+    // Delete project butonu göster
+}
+```
+
+#### **Backend'de Authorization:**
+```csharp
+[Authorize(Policy = "Project.Create")]
+[HttpPost]
+public async Task<IActionResult> CreateProject(CreateProjectCommand command)
+{
+    // Sadece Project.Create permission'ı olan kullanıcılar erişebilir
+}
+```
+
 ---
 
 ## 🧪 Test Senaryoları
