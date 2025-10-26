@@ -50,7 +50,12 @@ public static class AuthenticationRegistration
         var issuer = config["Jwt:Issuer"] ?? config["JWT_ISSUER"]!;
         var audience = config["Jwt:Audience"] ?? config["JWT_AUDIENCE"]!;
         services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters

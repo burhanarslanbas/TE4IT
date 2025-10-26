@@ -3,9 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Abstractions.Email;
+using TE4IT.Application.Abstractions.Common;
 using TE4IT.Infrastructure.Auth.Services;
 using TE4IT.Infrastructure.Auth.Services.Authorization;
-using TE4IT.Infrastructure.Email;
+using TE4IT.Infrastructure.Email.Services;
+using TE4IT.Infrastructure.Common;
 using TE4IT.Infrastructure.Options;
 using Microsoft.Extensions.Options;
 
@@ -55,7 +57,11 @@ public static class ServiceRegistration
 				opt.From = opt.Username;
 			}
 		});
-		services.AddScoped<IEmailSender, SmtpEmailSender>();
+		services.AddScoped<IEmailSender, EmailSenderService>();
+		services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+		
+		// URL Service
+		services.AddScoped<IUrlService, UrlService>();
 
 		return services;
 	}

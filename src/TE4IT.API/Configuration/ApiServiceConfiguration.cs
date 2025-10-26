@@ -20,12 +20,12 @@ public static class ApiServiceConfiguration
     {
         services.AddCors(options =>
         {
-            options.AddPolicy("Frontend", policy => policy
-                .WithOrigins(CorsOrigins.FrontendOrigins)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials()
-            );
+        options.AddPolicy("Frontend", policy => policy
+            .WithOrigins(CorsOrigins.GetFrontendOrigins())
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+        );
         });
         
         return services;

@@ -26,7 +26,8 @@ public sealed class RoleSeeder(RoleManager<IdentityRole<Guid>> roleManager, ILog
                 RoleNames.TeamLead,
                 RoleNames.Employee,
                 RoleNames.Trainer,
-                RoleNames.Customer
+                RoleNames.Customer,
+                RoleNames.Trial
             };
 
             // Role -> permission claims mapping
@@ -61,6 +62,11 @@ public sealed class RoleSeeder(RoleManager<IdentityRole<Guid>> roleManager, ILog
                 [RoleNames.Customer] = new[]
                 {
                     Permissions.Project.View
+                },
+                [RoleNames.Trial] = new[]
+                {
+                    Permissions.Project.View,
+                    Permissions.Project.Create
                 },
             };
 

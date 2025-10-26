@@ -40,8 +40,8 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
             throw new UserRegistrationFailedException(errors);
         }
 
-        // Yeni kullanıcıya varsayılan rol ata
-        var roleResult = await userManager.AddToRoleAsync(user, RoleNames.Employee);
+        // Yeni kullanıcıya varsayılan rol ata (Trial kullanıcısı)
+        var roleResult = await userManager.AddToRoleAsync(user, RoleNames.Trial);
         if (!roleResult.Succeeded)
         {
             // Rol atama başarısız olursa kullanıcıyı sil
@@ -87,6 +87,16 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
             return false;
 
         var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+        return result.Succeeded;
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return false;
+
+        var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         return result.Succeeded;
     }
 }

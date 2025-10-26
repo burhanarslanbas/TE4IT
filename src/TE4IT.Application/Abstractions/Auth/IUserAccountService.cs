@@ -8,6 +8,9 @@ public interface IUserAccountService
     // Parola sıfırlama akışı
     Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken ct);
     Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct);
+    
+    // Uygulama içi şifre değiştirme
+    Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct);
 }
 
 

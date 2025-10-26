@@ -306,7 +306,7 @@ curl -X POST "https://localhost:5001/api/v1/auth/forgotPassword" \
 ```json
 {
   "success": true,
-  "message": "Password reset successfully"
+  "message": "Şifre başarıyla güncellendi."
 }
 ```
 
@@ -329,6 +329,62 @@ curl -X POST "https://localhost:5001/api/v1/auth/resetPassword" \
     "email": "john.doe@example.com",
     "token": "reset_token_from_email",
     "newPassword": "NewSecurePass123!"
+  }'
+```
+
+---
+
+### 7. Uygulama İçi Şifre Değiştirme
+
+**Endpoint:** `POST /api/v1/auth/changePassword`
+
+**Açıklama:** Authenticated kullanıcılar için uygulama içi şifre değiştirme. JWT token ile kullanıcı kimliği belirlenir.
+
+**Authorization:** Bearer Token gerekli
+
+**Request Body:**
+```json
+{
+  "currentPassword": "string",
+  "newPassword": "string"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Şifreniz başarıyla güncellendi."
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Şifre değiştirme başarısız. Mevcut şifre yanlış olabilir."
+}
+```
+
+**cURL Örneği (Production):**
+```bash
+curl -X POST "https://te4it-api.azurewebsites.net/api/v1/auth/changePassword" \
+  -H "Authorization: Bearer your_access_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currentPassword": "CurrentPass123!",
+    "newPassword": "NewSecurePass456!"
+  }'
+```
+
+**cURL Örneği (Development):**
+```bash
+curl -X POST "https://localhost:5001/api/v1/auth/changePassword" \
+  -H "Authorization: Bearer your_access_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currentPassword": "CurrentPass123!",
+    "newPassword": "NewSecurePass456!"
   }'
 ```
 
@@ -376,12 +432,19 @@ public sealed record ResetPasswordCommand(
 );
 ```
 
-### ForgotPasswordRequest
+### ChangePasswordCommand
 ```csharp
-public sealed class ForgotPasswordRequest
-{
-    public string Email { get; set; } = string.Empty;
-}
+public sealed record ChangePasswordCommand(
+    string CurrentPassword,  // Mevcut şifre
+    string NewPassword      // Yeni şifre
+);
+```
+
+### ForgotPasswordCommand
+```csharp
+public sealed record ForgotPasswordCommand(
+    string Email  // Email adresi
+);
 ```
 
 ---
@@ -513,6 +576,55 @@ class TE4ITAuth {
         this.refreshToken = null;
     }
 
+    async forgotPassword(email) {
+        const response = await fetch(`${this.baseUrl}/api/v1/auth/forgotPassword`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Password reset request failed');
+        }
+        
+        return await response.json();
+    }
+
+    async resetPassword(email, token, newPassword) {
+        const response = await fetch(`${this.baseUrl}/api/v1/auth/resetPassword`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, token, newPassword })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Password reset failed');
+        }
+        
+        return await response.json();
+    }
+
+    async changePassword(currentPassword, newPassword) {
+        if (!this.accessToken) {
+            throw new Error('Not authenticated');
+        }
+
+        const response = await fetch(`${this.baseUrl}/api/v1/auth/changePassword`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Password change failed');
+        }
+        
+        return await response.json();
+    }
+
     async makeAuthenticatedRequest(endpoint, options = {}) {
         if (!this.accessToken) {
             throw new Error('Not authenticated');
@@ -552,6 +664,15 @@ await auth.register('johndoe', 'john@example.com', 'Password123!');
 
 // Giriş yap
 await auth.login('john@example.com', 'Password123!');
+
+// Şifre sıfırlama isteği gönder
+await auth.forgotPassword('john@example.com');
+
+// Email'den gelen token ile şifre sıfırla
+await auth.resetPassword('john@example.com', 'token_from_email', 'NewPassword123!');
+
+// Uygulama içi şifre değiştir
+await auth.changePassword('CurrentPassword123!', 'NewPassword456!');
 
 // Authenticated request
 const projectsResponse = await auth.makeAuthenticatedRequest('/api/v1/projects');
@@ -617,6 +738,18 @@ interface TE4ITAuthApi {
         @Header("Authorization") token: String,
         @Body request: RevokeRefreshTokenRequest
     ): Response<Unit>
+    
+    @POST("api/v1/auth/forgotPassword")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<ForgotPasswordResponse>
+    
+    @POST("api/v1/auth/resetPassword")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ResetPasswordResponse>
+    
+    @POST("api/v1/auth/changePassword")
+    suspend fun changePassword(
+        @Header("Authorization") token: String,
+        @Body request: ChangePasswordRequest
+    ): Response<ChangePasswordResponse>
 }
 
 // Data Classes
@@ -631,6 +764,21 @@ data class LoginRequest(
     val password: String
 )
 
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val token: String,
+    val newPassword: String
+)
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
 data class LoginResponse(
     val userId: String,
     val email: String,
@@ -638,6 +786,21 @@ data class LoginResponse(
     val expiresAt: String,
     val refreshToken: String,
     val refreshExpires: String
+)
+
+data class ForgotPasswordResponse(
+    val success: Boolean,
+    val message: String
+)
+
+data class ResetPasswordResponse(
+    val success: Boolean,
+    val message: String
+)
+
+data class ChangePasswordResponse(
+    val success: Boolean,
+    val message: String
 )
 
 // Auth Manager
@@ -679,6 +842,34 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
         refreshToken = null
     }
 
+    suspend fun forgotPassword(email: String): ForgotPasswordResponse {
+        val response = api.forgotPassword(ForgotPasswordRequest(email))
+        if (response.isSuccessful) {
+            return response.body()!!
+        } else {
+            throw Exception("Forgot password failed: ${response.code()}")
+        }
+    }
+
+    suspend fun resetPassword(email: String, token: String, newPassword: String): ResetPasswordResponse {
+        val response = api.resetPassword(ResetPasswordRequest(email, token, newPassword))
+        if (response.isSuccessful) {
+            return response.body()!!
+        } else {
+            throw Exception("Password reset failed: ${response.code()}")
+        }
+    }
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): ChangePasswordResponse {
+        val authToken = accessToken ?: throw Exception("Not authenticated")
+        val response = api.changePassword("Bearer $authToken", ChangePasswordRequest(currentPassword, newPassword))
+        if (response.isSuccessful) {
+            return response.body()!!
+        } else {
+            throw Exception("Password change failed: ${response.code()}")
+        }
+    }
+
     fun getAuthHeader(): String? = accessToken?.let { "Bearer $it" }
 }
 ```
@@ -704,13 +895,15 @@ class TE4ITAuthManager(private val api: TE4ITAuthApi) {
 - Limit aşıldığında 429 hatası döner
 
 ### Password Requirements
-- Minimum 6 karakter
-- Önerilen: Büyük harf, küçük harf, rakam ve özel karakter içermeli
+- Minimum 8 karakter
+- Büyük harf, küçük harf, rakam ve özel karakter içermeli
+- Mevcut şifre ile aynı olamaz (changePassword için)
 
 ### Email Verification
 - Şifre sıfırlama linkleri email ile gönderilir
-- Link'ler sınırlı süre geçerlidir
+- Link'ler sınırlı süre geçerlidir (genellikle 1 saat)
 - Güvenlik için kullanıcı var/yok bilgisi sızdırılmaz
+- Şifre değişikliği bildirimi otomatik email ile gönderilir
 
 ---
 

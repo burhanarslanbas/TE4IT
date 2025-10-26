@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Features.Auth.Commands.Roles.CreateRole;
@@ -14,7 +15,7 @@ namespace TE4IT.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
-[Authorize(Roles = "Administrator")]
+[Authorize]
 public class RolesController(IMediator mediator) : ControllerBase
 {
     /// <summary>
