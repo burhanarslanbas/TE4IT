@@ -1,8 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using TE4IT.API.Configuration.Constants;
 using TE4IT.Application.Features.Auth.Commands.Login;
 using TE4IT.Application.Features.Auth.Commands.RefreshToken;
 using TE4IT.Application.Features.Auth.Commands.Register;
@@ -36,7 +34,6 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     /// Kullanıcı girişi yapar
     /// </summary>
     [HttpPost("login")]
-    [EnableRateLimiting(RateLimitPolicies.AuthPolicy)] // ✅ Login için sıkı rate limiting
     [ProducesResponseType(typeof(LoginCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken ct)
@@ -50,7 +47,6 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("refreshToken")]
     [AllowAnonymous]
-    [EnableRateLimiting("fixed-refresh")]
     [ProducesResponseType(typeof(RefreshTokenCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command, CancellationToken ct)
