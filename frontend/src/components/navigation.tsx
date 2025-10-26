@@ -1,17 +1,17 @@
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavigationProps {
-  onNavigateToLogin: () => void;
-  onNavigateToRegister: () => void;
-  onNavigateToProfile?: () => void;
   isAuthenticated?: boolean;
   onLogout?: () => void;
 }
 
-export function Navigation({ onNavigateToLogin, onNavigateToRegister, onNavigateToProfile, isAuthenticated = false, onLogout }: NavigationProps) {
+export function Navigation({ isAuthenticated = false, onLogout }: NavigationProps) {
+  const navigate = useNavigate();
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -48,7 +48,7 @@ export function Navigation({ onNavigateToLogin, onNavigateToRegister, onNavigate
                 <Button 
                   variant="ghost" 
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
-                  onClick={onNavigateToProfile}
+                  onClick={() => navigate("/profile")}
                 >
                   Profil
                 </Button>
@@ -66,13 +66,13 @@ export function Navigation({ onNavigateToLogin, onNavigateToRegister, onNavigate
                 <Button 
                   variant="ghost" 
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
-                  onClick={onNavigateToLogin}
+                  onClick={() => navigate("/login")}
                 >
                   Giriş Yap
                 </Button>
                 <Button 
                   className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90 shadow-lg shadow-[#8B5CF6]/25"
-                  onClick={onNavigateToRegister}
+                  onClick={() => navigate("/register")}
                 >
                   Ücretsiz Başla
                 </Button>
