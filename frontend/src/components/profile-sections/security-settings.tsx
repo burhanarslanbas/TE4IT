@@ -5,8 +5,10 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Badge } from "../ui/badge";
-import { Lock, Shield, Smartphone, Monitor, Eye, EyeOff, LogOut, CheckCircle2 } from "lucide-react";
+import { Lock, Shield, Smartphone, Monitor, Eye, EyeOff, LogOut, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
+import { AuthService } from "../../services/auth";
+import { ApiError } from "../../services/api";
 
 export function SecuritySettings() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -18,6 +20,7 @@ export function SecuritySettings() {
     confirm: false,
   });
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Password strength calculation
   const calculatePasswordStrength = (password: string) => {
@@ -34,7 +37,15 @@ export function SecuritySettings() {
   const strengthLabel = passwordStrength <= 1 ? "Zayıf" : passwordStrength <= 3 ? "Orta" : "Güçlü";
   const strengthColor = passwordStrength <= 1 ? "#EF4444" : passwordStrength <= 3 ? "#F59E0B" : "#10B981";
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
+    // Validation
+    if (!currentPassword) {
+      toast.error("Mevcut şifre gereklidir!", {
+        description: "Lütfen mevcut şifrenizi girin.",
+      });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.error("Şifreler eşleşmiyor!", {
         description: "Lütfen yeni şifrenizi kontrol edin.",
@@ -49,16 +60,54 @@ export function SecuritySettings() {
       return;
     }
 
-    // API call simulation
-    setTimeout(() => {
+    setIsLoading(true);
+
+    try {
+      // Backend API'ye şifre değiştirme isteği gönder
+      await AuthService.changePassword(currentPassword, newPassword);
+
       toast.success("Şifre başarıyla değiştirildi!", {
         description: "Yeni şifrenizle giriş yapabilirsiniz.",
         duration: 3000,
       });
+
+      // Form'u temizle
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    }, 500);
+
+    } catch (error) {
+      // Hata yönetimi
+      if (error instanceof ApiError) {
+        if (error.status === 400 || error.message?.includes('yanlış')) {
+          toast.error("Mevcut şifre yanlış!", {
+            description: "Lütfen mevcut şifrenizi doğru girdiğinizden emin olun.",
+            duration: 5000,
+          });
+        } else if (error.status === 401) {
+          toast.error("Oturum sonlandırıldı!", {
+            description: "Lütfen tekrar giriş yapın.",
+            duration: 4000,
+          });
+          // Redirect to login after 2 seconds
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+        } else {
+          toast.error("Hata Oluştu", {
+            description: error.message || "Şifre değiştirilemedi. Lütfen tekrar deneyin.",
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.error("Bağlantı Hatası", {
+          description: "İnternet bağlantınızı kontrol edin ve tekrar deneyin",
+          duration: 4000,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handle2FAToggle = (enabled: boolean) => {
@@ -115,7 +164,7 @@ export function SecuritySettings() {
                 type={showPasswords.current ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Mevcut şifrenizi girin"
                 className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] pr-10 focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all"
               />
               <button
@@ -139,7 +188,7 @@ export function SecuritySettings() {
                 type={showPasswords.new ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Yeni şifrenizi girin"
                 className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] pr-10 focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all"
               />
               <button
@@ -188,7 +237,7 @@ export function SecuritySettings() {
                 type={showPasswords.confirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Yeni şifrenizi tekrar girin"
                 className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] pr-10 focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all"
               />
               <button
@@ -209,11 +258,18 @@ export function SecuritySettings() {
 
           <Button
             onClick={handlePasswordChange}
-            disabled={!currentPassword || !newPassword || !confirmPassword}
+            disabled={!currentPassword || !newPassword || !confirmPassword || isLoading}
             className="w-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white hover:from-[#7C3AED] hover:to-[#6D28D9] shadow-lg shadow-[#8B5CF6]/30 hover:shadow-[#8B5CF6]/50 transition-all disabled:opacity-50"
             size="lg"
           >
-            Şifreyi Değiştir
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Değiştiriliyor...
+              </>
+            ) : (
+              "Şifreyi Değiştir"
+            )}
           </Button>
         </div>
       </motion.div>

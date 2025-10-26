@@ -322,6 +322,12 @@ export class AuthService {
       throw new ApiError('Şifre değiştirme başarısız');
     } catch (error) {
       if (error instanceof ApiError) {
+        // Daha detaylı hata mesajı
+        if (error.status === 400) {
+          throw new ApiError('Mevcut şifre yanlış veya yeni şifre gereksinimleri karşılamıyor');
+        } else if (error.status === 401) {
+          throw new ApiError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        }
         throw error;
       }
       throw new ApiError('Şifre değiştirilirken hata oluştu');

@@ -51,16 +51,29 @@
     },
     build: {
       target: 'esnext',
-      outDir: 'build',
+      outDir: 'dist', // Azure için dist
+      emptyOutDir: true,
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select']
+          }
+        }
+      }
     },
     server: {
       port: 3000,
       open: true,
       proxy: {
         '/api': {
-          target: 'https://te4it-api.azurewebsites.net',
+          target: 'http://localhost:5001',
           changeOrigin: true,
-          secure: true,
+          secure: false,
           configure: (proxy, _options) => {
             proxy.on('error', (err, _req, _res) => {
               console.log('proxy error', err);
@@ -75,4 +88,7 @@
         }
       }
     },
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
+    }
   });

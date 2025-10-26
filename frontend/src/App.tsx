@@ -12,6 +12,7 @@ import { Footer } from "./components/footer";
 import { LoginPage } from "./components/login-page";
 import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
+import { ForgotPasswordPage } from "./components/forgot-password-page";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
@@ -195,6 +196,9 @@ const LoginPageWrapper = () => {
       onNavigateToHome={() => {
         window.location.href = "/";
       }}
+      onNavigateToForgotPassword={() => {
+        window.location.href = "/forgot-password";
+      }}
       onLogin={handleLogin}
     />
   );
@@ -272,6 +276,23 @@ export default function App() {
             element={
               <div className="min-h-screen bg-[#0D1117]">
                 <RegisterPageWrapper />
+              </div>
+            } 
+          />
+          
+          {/* Forgot Password Sayfası */}
+          <Route 
+            path="/forgot-password" 
+            element={
+              <div className="min-h-screen bg-[#0D1117]">
+                <ForgotPasswordPage
+                  onNavigateToLogin={() => {
+                    window.location.href = "/login";
+                  }}
+                  onNavigateToHome={() => {
+                    window.location.href = "/";
+                  }}
+                />
               </div>
             } 
           />

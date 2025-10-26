@@ -3,8 +3,8 @@
  * Backend API ile iletişim için temel konfigürasyon ve yardımcı fonksiyonlar
  */
 
-// API Base URL - Geçici olarak direkt backend URL kullanıyoruz
-const API_BASE_URL = 'https://te4it-api.azurewebsites.net';
+// Import API configuration
+import { API_BASE_URL } from '../config/config';
 
 // API Response tipleri
 export interface ApiResponse<T = any> {

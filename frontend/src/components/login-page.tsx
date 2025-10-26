@@ -13,10 +13,11 @@ import { toast } from "sonner@2.0.3";
 interface LoginPageProps {
   onNavigateToRegister: () => void;
   onNavigateToHome: () => void;
+  onNavigateToForgotPassword?: () => void;
   onLogin: () => void;
 }
 
-export function LoginPage({ onNavigateToRegister, onNavigateToHome, onLogin }: LoginPageProps) {
+export function LoginPage({ onNavigateToRegister, onNavigateToHome, onNavigateToForgotPassword, onLogin }: LoginPageProps) {
   // Form state'leri
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -268,6 +269,13 @@ export function LoginPage({ onNavigateToRegister, onNavigateToHome, onLogin }: L
                 <button
                   type="button"
                   disabled={isLoading}
+                  onClick={() => {
+                    if (onNavigateToForgotPassword) {
+                      onNavigateToForgotPassword();
+                    } else {
+                      window.location.href = "/forgot-password";
+                    }
+                  }}
                   className="text-sm text-[#8B5CF6] hover:text-[#9D6FFF] transition-colors disabled:opacity-50"
                 >
                   Şifremi Unuttum
