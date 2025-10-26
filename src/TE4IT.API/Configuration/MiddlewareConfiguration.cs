@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.RateLimiting;
 using TE4IT.API.Extensions;
 using TE4IT.API.Middlewares;
 
@@ -49,7 +48,6 @@ public static class MiddlewareConfiguration
         
         // Authentication ve Authorization
         app.UseAuthentication();
-        app.UseRateLimiter(new RateLimiterOptions());
         app.UseAuthorization();
         
         return app;
