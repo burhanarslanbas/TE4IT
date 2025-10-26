@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -6,24 +6,52 @@ import { Label } from "../ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { User, Mail, Phone, Camera } from "lucide-react";
 import { toast } from "sonner@2.0.3";
+import { TokenHelper } from "../../services/auth";
 
 export function ProfileInfo() {
+  // Token'dan kullanıcı bilgilerini al
+  const currentUser = TokenHelper.getCurrentUser();
+  
   const [formData, setFormData] = useState({
-    fullName: "Ahmet Yılmaz",
-    email: "ahmet.yilmaz@te4it.com",
-    phone: "+90 555 123 4567",
+    fullName: currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.userName : "Kullanıcı",
+    userName: currentUser?.userName || "",
+    email: currentUser?.email || "",
+    phone: "", // Kullanıcı kendi ekleyecek
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [originalData, setOriginalData] = useState(formData);
+
+  // İlk render'da kullanıcı bilgilerini set et
+  useEffect(() => {
+    if (currentUser) {
+      const initialData = {
+        fullName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.userName,
+        userName: currentUser.userName || "",
+        email: currentUser.email || "",
+        phone: "", // Kullanıcı kendi ekleyecek
+      };
+      setFormData(initialData);
+      setOriginalData(initialData);
+    }
+  }, [currentUser]);
+
+  // İptal butonuna basıldığında değişiklikleri geri al
+  const handleCancel = () => {
+    setFormData(originalData);
+    setIsEditing(false);
+  };
 
   const handleSave = () => {
     // API call simulation
     setTimeout(() => {
+      // Değişiklikleri kaydet
+      setOriginalData(formData);
+      setIsEditing(false);
       toast.success("Profil bilgileri başarıyla güncellendi!", {
         description: "Değişiklikler kaydedildi.",
         duration: 3000,
       });
-      setIsEditing(false);
     }, 500);
   };
 
@@ -44,7 +72,7 @@ export function ProfileInfo() {
             <Avatar className="w-32 h-32 border-4 border-[#8B5CF6]/30 shadow-lg shadow-[#8B5CF6]/20">
               <AvatarImage src="" />
               <AvatarFallback className="bg-gradient-to-br from-[#8B5CF6] to-[#EC4899] text-white text-4xl">
-                {formData.fullName.split(' ').map(n => n[0]).join('')}
+                {(formData.fullName || formData.userName || "K").substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             
@@ -55,7 +83,7 @@ export function ProfileInfo() {
           </div>
           
           <div className="text-center">
-            <h3 className="text-2xl text-[#E5E7EB] mb-1">{formData.fullName}</h3>
+            <h3 className="text-2xl text-[#E5E7EB] mb-1">{formData.fullName || formData.userName || formData.email?.split('@')[0] || "Kullanıcı"}</h3>
             <p className="text-[#9CA3AF]">{formData.email}</p>
           </div>
         </div>
@@ -75,7 +103,13 @@ export function ProfileInfo() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing) {
+                handleCancel();
+              } else {
+                setIsEditing(true);
+              }
+            }}
             className="text-[#8B5CF6] hover:text-[#9D6FFF] hover:bg-[#8B5CF6]/10"
           >
             {isEditing ? "İptal" : "Düzenle"}
@@ -83,10 +117,23 @@ export function ProfileInfo() {
         </div>
 
         <div className="space-y-5">
+          {/* User Name */}
+          <div className="space-y-2">
+            <Label htmlFor="userName" className="text-[#E5E7EB] flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Kullanıcı Adı
+            </Label>
+            <Input
+              id="userName"
+              value={formData.userName}
+              disabled
+              className="bg-[#0D1117] border-[#30363D] text-[#9CA3AF]"
+            />
+          </div>
+
           {/* Full Name */}
           <div className="space-y-2">
             <Label htmlFor="fullName" className="text-[#E5E7EB] flex items-center gap-2">
-              <User className="w-4 h-4" />
               Tam Adı
             </Label>
             <Input
@@ -94,7 +141,8 @@ export function ProfileInfo() {
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               disabled={!isEditing}
-              className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] disabled:opacity-60 focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all"
+              className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] disabled:opacity-60 disabled:cursor-not-allowed focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all"
+              placeholder="İsim Soyisim"
             />
           </div>
 
@@ -132,7 +180,8 @@ export function ProfileInfo() {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               disabled={!isEditing}
-              className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] disabled:opacity-60 focus:border-[#2DD4BF] focus:ring-2 focus:ring-[#2DD4BF]/20 focus:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
+              className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] disabled:opacity-60 disabled:cursor-not-allowed focus:border-[#2DD4BF] focus:ring-2 focus:ring-[#2DD4BF]/20 focus:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
+              placeholder="+90 5XX XXX XX XX"
             />
           </div>
 
