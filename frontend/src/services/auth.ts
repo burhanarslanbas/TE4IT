@@ -54,6 +54,43 @@ export interface RegisterResponse {
   refreshExpires: string;
 }
 
+// Refresh token request tipi
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+// Refresh token response tipi
+export interface RefreshTokenResponse {
+  accessToken: string;
+  expiresAt: string;
+  refreshToken: string;
+  refreshExpires: string;
+}
+
+// Change password request tipi
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+// Change password response tipi
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+// Forgot password response tipi
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+// Reset password response tipi
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
 /**
  * Authentication Servisleri
  */
@@ -74,8 +111,9 @@ export class AuthService {
       );
 
       if (response.success && response.data) {
-        // Token'ı kaydet - Backend'den gelen accessToken'ı kullan
+        // Token'ları kaydet
         apiClient.setToken(response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
         
         return response.data;
       }
@@ -105,8 +143,9 @@ export class AuthService {
       );
 
       if (response.success && response.data) {
-        // Token'ı kaydet - Backend'den gelen accessToken'ı kullan
+        // Token'ları kaydet
         apiClient.setToken(response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
         
         return response.data;
       }
@@ -121,18 +160,57 @@ export class AuthService {
   }
 
   /**
+   * Access token'ı yenile
+   * @param refreshToken - Refresh token
+   * @returns Refresh token response
+   */
+  static async refreshAccessToken(refreshToken?: string): Promise<RefreshTokenResponse> {
+    try {
+      // Eğer refreshToken verilmemişse localStorage'dan al
+      const tokenToUse = refreshToken || localStorage.getItem('refreshToken');
+      
+      if (!tokenToUse) {
+        throw new ApiError('Refresh token bulunamadı');
+      }
+
+      const response = await apiClient.post<RefreshTokenResponse>(
+        '/api/v1/auth/refreshToken',
+        { refreshToken: tokenToUse }
+      );
+
+      if (response.success && response.data) {
+        // Yeni token'ları kaydet
+        apiClient.setToken(response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        
+        return response.data;
+      }
+
+      throw new ApiError('Token yenileme başarısız');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError('Token yenilenirken hata oluştu');
+    }
+  }
+
+  /**
    * Kullanıcı çıkışı
+   * Token'ları her durumda temizler - Backend isteği opsiyonel
    */
   static async logout(): Promise<void> {
     try {
-      // Backend'e logout isteği gönder (opsiyonel)
-      await apiClient.post('/api/v1/auth/logout');
+      // Token'ları temizle
+      apiClient.clearToken();
+      localStorage.removeItem('refreshToken');
     } catch (error) {
       // Logout hatası önemli değil, token'ı temizle
-      console.warn('Logout API hatası:', error);
+      console.warn('Logout hatası:', error);
     } finally {
-      // Her durumda token'ı temizle
+      // Her durumda token'ları temizle (double check)
       apiClient.clearToken();
+      localStorage.removeItem('refreshToken');
     }
   }
 
@@ -166,18 +244,22 @@ export class AuthService {
   }
 
   /**
-   * Şifre sıfırlama isteği gönder
+   * Şifre sıfırlama isteği gönder (Forgot Password)
    * @param email - Kullanıcı email'i
+   * @returns Forgot password response
    */
-  static async requestPasswordReset(email: string): Promise<void> {
+  static async requestPasswordReset(email: string): Promise<ForgotPasswordResponse> {
     try {
-      const response = await apiClient.post('/api/v1/auth/forgot-password', {
-        email,
-      });
+      const response = await apiClient.post<ForgotPasswordResponse>(
+        '/api/v1/auth/forgotPassword',
+        { email }
+      );
 
-      if (!response.success) {
-        throw new ApiError('Şifre sıfırlama isteği başarısız');
+      if (response.success && response.data) {
+        return response.data;
       }
+
+      throw new ApiError('Şifre sıfırlama isteği başarısız');
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -187,25 +269,62 @@ export class AuthService {
   }
 
   /**
-   * Şifre sıfırlama
+   * Şifre sıfırlama (Reset Password)
+   * @param email - Kullanıcı email'i
    * @param token - Reset token
    * @param newPassword - Yeni şifre
+   * @returns Reset password response
    */
-  static async resetPassword(token: string, newPassword: string): Promise<void> {
+  static async resetPassword(email: string, token: string, newPassword: string): Promise<ResetPasswordResponse> {
     try {
-      const response = await apiClient.post('/api/v1/auth/reset-password', {
-        token,
-        password: newPassword,
-      });
+      const response = await apiClient.post<ResetPasswordResponse>(
+        '/api/v1/auth/resetPassword',
+        {
+          email,
+          token,
+          newPassword
+        }
+      );
 
-      if (!response.success) {
-        throw new ApiError('Şifre sıfırlama başarısız');
+      if (response.success && response.data) {
+        return response.data;
       }
+
+      throw new ApiError('Şifre sıfırlama başarısız');
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
       throw new ApiError('Şifre sıfırlanırken hata oluştu');
+    }
+  }
+
+  /**
+   * Şifre değiştirme (Change Password)
+   * @param currentPassword - Mevcut şifre
+   * @param newPassword - Yeni şifre
+   * @returns Change password response
+   */
+  static async changePassword(currentPassword: string, newPassword: string): Promise<ChangePasswordResponse> {
+    try {
+      const response = await apiClient.post<ChangePasswordResponse>(
+        '/api/v1/auth/changePassword',
+        {
+          currentPassword,
+          newPassword
+        }
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      throw new ApiError('Şifre değiştirme başarısız');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError('Şifre değiştirilirken hata oluştu');
     }
   }
 }
@@ -256,5 +375,119 @@ export class ValidationHelper {
     // En az 3 karakter, sadece harf, rakam ve alt çizgi
     const usernameRegex = /^[a-zA-Z0-9_]{3,}$/;
     return usernameRegex.test(username);
+  }
+}
+
+/**
+ * JWT Token Decode Helper
+ * Token'dan kullanıcı bilgilerini decode eder
+ */
+export class TokenHelper {
+  /**
+   * JWT token'dan payload'ı decode et
+   * @param token - JWT token string
+   * @returns Decoded payload veya null
+   */
+  static decodeToken(token: string): any | null {
+    try {
+      // JWT token formatı: header.payload.signature
+      const parts = token.split('.');
+      
+      if (parts.length !== 3) {
+        console.error('Geçersiz JWT token formatı');
+        return null;
+      }
+
+      // Payload kısmını decode et (base64)
+      const payload = parts[1];
+      const decodedPayload = atob(payload);
+      
+      // JSON olarak parse et
+      return JSON.parse(decodedPayload);
+    } catch (error) {
+      console.error('Token decode hatası:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Token'dan kullanıcı bilgilerini getir
+   * @returns Kullanıcı bilgileri veya null
+   */
+  static getCurrentUser(): User | null {
+    try {
+      const token = localStorage.getItem('te4it_token');
+      
+      if (!token) {
+        return null;
+      }
+
+      const decoded = this.decodeToken(token);
+      
+      if (!decoded) {
+        return null;
+      }
+
+      // Token'dan kullanıcı bilgilerini map et
+      // Tüm olası field'ları kontrol et
+      return {
+        id: decoded.userId || decoded.sub || decoded.id || '',
+        userName: decoded.userName || decoded.username || decoded.preferred_username || decoded.unique_name || '',
+        email: decoded.email || decoded.emailAddress || decoded.eMail || '',
+        firstName: decoded.firstName || decoded.given_name || decoded.first_name || '',
+        lastName: decoded.lastName || decoded.family_name || decoded.last_name || '',
+        role: decoded.role || decoded.roles || '',
+        createdAt: decoded.createdAt || decoded.iat || '',
+        updatedAt: decoded.updatedAt || decoded.exp || '',
+      };
+    } catch (error) {
+      console.error('Kullanıcı bilgisi alınırken hata:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Token'ın expire tarihini kontrol et
+   * @returns Expire date veya null
+   */
+  static getTokenExpirationDate(): Date | null {
+    try {
+      const token = localStorage.getItem('te4it_token');
+      
+      if (!token) {
+        return null;
+      }
+
+      const decoded = this.decodeToken(token);
+      
+      if (!decoded || !decoded.exp) {
+        return null;
+      }
+
+      // exp Unix timestamp (seconds)
+      return new Date(decoded.exp * 1000);
+    } catch (error) {
+      console.error('Token expiration kontrolü hatası:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Token'ın süresi dolmuş mu?
+   * @returns Token geçerli mi?
+   */
+  static isTokenExpired(): boolean {
+    try {
+      const expirationDate = this.getTokenExpirationDate();
+      
+      if (!expirationDate) {
+        return true;
+      }
+
+      return expirationDate < new Date();
+    } catch (error) {
+      console.error('Token expiration kontrolü hatası:', error);
+      return true;
+    }
   }
 }

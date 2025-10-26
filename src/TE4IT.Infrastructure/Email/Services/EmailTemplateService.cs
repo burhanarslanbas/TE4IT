@@ -25,13 +25,13 @@ public sealed class EmailTemplateService : IEmailTemplateService
         // Eğer bu yol yoksa, ContentRootPath'te ara
         if (!Directory.Exists(_templatesPath))
         {
-            _templatesPath = Path.Combine(_environment.ContentRootPath, "..", "TE4IT.Infrastructure", "Email", "Templates");
+            _templatesPath = Path.Combine(_environment.ContentRootPath, "Email", "Templates");
         }
         
-        // Eğer hala yoksa, BaseDirectory'de ara
+        // Eğer hala yoksa, BaseDirectory'de ara (Azure deployment)
         if (!Directory.Exists(_templatesPath))
         {
-            _templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "TE4IT.Infrastructure", "Email", "Templates");
+            _templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Email", "Templates");
         }
         
         // Debug için yol bilgisini logla
@@ -61,18 +61,42 @@ public sealed class EmailTemplateService : IEmailTemplateService
     }
 
     /// <summary>
-    /// Template dosyasını yükle
+    /// Template dosyasını yükle - Gömülü resource veya dosya sisteminden
     /// </summary>
     private string LoadTemplate(string category, string fileName)
     {
+        // Önce dosya sisteminden dene
         var templatePath = Path.Combine(_templatesPath, category, fileName);
         
-        if (!File.Exists(templatePath))
+        if (File.Exists(templatePath))
         {
-            throw new FileNotFoundException($"Email template bulunamadı: {templatePath}");
+            return File.ReadAllText(templatePath);
         }
 
-        return File.ReadAllText(templatePath);
+        // Dosya bulunamadıysa, gömülü fallback kullan
+        return LoadEmbeddedTemplate(category, fileName);
+    }
+
+    /// <summary>
+    /// Gömülü template yükle (fallback)
+    /// </summary>
+    private string LoadEmbeddedTemplate(string category, string fileName)
+    {
+        var assembly = typeof(EmailTemplateService).Assembly;
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(name => name.EndsWith(fileName));
+
+        if (resourceName != null)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                return reader.ReadToEnd();
+            }
+        }
+
+        throw new FileNotFoundException($"Email template bulunamadı: {Path.Combine(_templatesPath, category, fileName)}");
     }
 
     public string GetPasswordChangeNotificationTemplate(string email)

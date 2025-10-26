@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navigation } from "./components/navigation";
 import { HeroSection } from "./components/hero-section";
 import { FeaturesSection } from "./components/features-section";
@@ -12,33 +13,24 @@ import { LoginPage } from "./components/login-page";
 import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { AuthService } from "./services/auth";
+import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
-type PageType = "home" | "login" | "register" | "profile";
-
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<PageType>("home");
+/**
+ * Protected Route Bileşeni
+ * Kullanıcının authenticated olması gereken sayfalar için
+ */
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  /**
-   * Uygulama başlangıcında authentication durumunu kontrol et
-   */
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = () => {
       try {
-        // Token'ın varlığını kontrol et
+        // Token kontrolü yap - API'ye istek atmadan
         if (AuthService.isAuthenticated()) {
-          // Token varsa kullanıcı bilgilerini doğrula
-          try {
-            await AuthService.getCurrentUser();
-            setIsAuthenticated(true);
-          } catch (error) {
-            // Token geçersizse temizle
-            await AuthService.logout();
-            setIsAuthenticated(false);
-          }
+          setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
         }
@@ -53,39 +45,6 @@ export default function App() {
     checkAuthStatus();
   }, []);
 
-  /**
-   * Login handler - Başarılı giriş sonrası
-   */
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    setCurrentPage("profile");
-    toast.success("Giriş başarılı!", {
-      description: "Profil sayfasına yönlendiriliyorsunuz...",
-      duration: 2000,
-    });
-  };
-
-  /**
-   * Logout handler - Çıkış işlemi
-   */
-  const handleLogout = async () => {
-    try {
-      await AuthService.logout();
-      setIsAuthenticated(false);
-      setCurrentPage("home");
-      toast.info("Çıkış yapıldı", {
-        description: "Güvenli bir şekilde çıkış yaptınız.",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Hata olsa bile state'i temizle
-      setIsAuthenticated(false);
-      setCurrentPage("home");
-    }
-  };
-
-  // Loading state - İlk yükleme sırasında
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
@@ -97,37 +56,69 @@ export default function App() {
     );
   }
 
-  if (currentPage === "login") {
-    return (
-      <LoginPage
-        onNavigateToRegister={() => setCurrentPage("register")}
-        onNavigateToHome={() => setCurrentPage("home")}
-        onLogin={handleLogin}
-      />
-    );
+  if (!isAuthenticated) {
+    toast.error("Giriş yapmalısınız", {
+      description: "Bu sayfaya erişmek için lütfen giriş yapın.",
+      duration: 3000,
+    });
+    return <Navigate to="/login" replace />;
   }
 
-  if (currentPage === "register") {
-    return (
-      <RegisterPage
-        onNavigateToLogin={() => setCurrentPage("login")}
-        onNavigateToHome={() => setCurrentPage("home")}
-      />
-    );
-  }
+  return <>{children}</>;
+};
 
-  if (currentPage === "profile" && isAuthenticated) {
-    return (
-      <ProfilePage
-        onNavigateToHome={() => setCurrentPage("home")}
-        onLogout={handleLogout}
-      />
-    );
-  }
+/**
+ * Ana Layout Bileşeni
+ * Her sayfada tekrar eden bileşenler için
+ */
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        if (AuthService.isAuthenticated()) {
+          // Token varsa authenticated olarak işaretle
+          // Backend endpoint'leri henüz hazır değilse token kontrolü yeterli
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, [location]);
+
+  const handleLogout = async () => {
+    try {
+      // Token'ı temizle
+      apiClient.clearToken();
+      setIsAuthenticated(false);
+      toast.info("Çıkış yapıldı", {
+        description: "Güvenli bir şekilde çıkış yaptınız.",
+        duration: 2000,
+      });
+      window.location.href = "/";
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsAuthenticated(false);
+      window.location.href = "/";
+    }
+  };
+
+  // Login, Register ve Profile sayfalarında Navigation gösterme
+  const showNavigation = !["/login", "/register", "/profile"].includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-[#0D1117]">
-      {/* Toast notifications - Global toast container */}
+    <>
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -141,22 +132,166 @@ export default function App() {
           },
         }}
       />
+      
+      {showNavigation && (
+        <Navigation 
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+        />
+      )}
+      
+      {children}
+      
+      {showNavigation && <Footer />}
+    </>
+  );
+};
 
-      <Navigation 
-        onNavigateToLogin={() => setCurrentPage("login")}
-        onNavigateToRegister={() => setCurrentPage("register")}
-        onNavigateToProfile={() => setCurrentPage("profile")}
-        isAuthenticated={isAuthenticated}
-        onLogout={handleLogout}
-      />
-      <HeroSection onNavigateToRegister={() => setCurrentPage("register")} />
+/**
+ * Ana Sayfa Bileşeni
+ */
+const HomePage = () => {
+  const handleNavigateToRegister = () => {
+    window.location.href = "/register";
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0D1117]">
+      <HeroSection onNavigateToRegister={handleNavigateToRegister} />
       <FeaturesSection />
       <DetailedFeaturesSection />
       <TrustBuildingSection />
       <HowItWorksSection />
-      <PricingSection onNavigateToRegister={() => setCurrentPage("register")} />
-      <FinalCtaSection onNavigateToRegister={() => setCurrentPage("register")} />
-      <Footer />
+      <PricingSection onNavigateToRegister={handleNavigateToRegister} />
+      <FinalCtaSection onNavigateToRegister={handleNavigateToRegister} />
     </div>
+  );
+};
+
+/**
+ * Login Page Handler
+ */
+const LoginPageWrapper = () => {
+  const handleLogin = async () => {
+    try {
+      toast.success("Giriş başarılı!", {
+        description: "Profil sayfasına yönlendiriliyorsunuz...",
+        duration: 2000,
+      });
+      // Redirect with a small delay to show the toast
+      setTimeout(() => {
+        window.location.href = "/profile";
+      }, 1000);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
+
+  return (
+    <LoginPage
+      onNavigateToRegister={() => {
+        window.location.href = "/register";
+      }}
+      onNavigateToHome={() => {
+        window.location.href = "/";
+      }}
+      onLogin={handleLogin}
+    />
+  );
+};
+
+/**
+ * Register Page Handler
+ */
+const RegisterPageWrapper = () => {
+  return (
+    <RegisterPage
+      onNavigateToLogin={() => {
+        window.location.href = "/login";
+      }}
+      onNavigateToHome={() => {
+        window.location.href = "/";
+      }}
+    />
+  );
+};
+
+/**
+ * Profile Page Handler
+ */
+const ProfilePageWrapper = () => {
+  const handleLogout = async () => {
+    try {
+      // Token'ı temizle
+      apiClient.clearToken();
+      toast.info("Çıkış yapıldı", {
+        description: "Güvenli bir şekilde çıkış yaptınız.",
+        duration: 2000,
+      });
+      window.location.href = "/";
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = "/";
+    }
+  };
+
+  return (
+    <ProfilePage
+      onNavigateToHome={() => {
+        window.location.href = "/";
+      }}
+      onLogout={handleLogout}
+    />
+  );
+};
+
+/**
+ * Ana App Bileşeni
+ */
+export default function App() {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          {/* Ana Sayfa */}
+          <Route path="/" element={<HomePage />} />
+          
+          {/* Login Sayfası */}
+          <Route 
+            path="/login" 
+            element={
+              <div className="min-h-screen bg-[#0D1117]">
+                <LoginPageWrapper />
+              </div>
+            } 
+          />
+          
+          {/* Register Sayfası */}
+          <Route 
+            path="/register" 
+            element={
+              <div className="min-h-screen bg-[#0D1117]">
+                <RegisterPageWrapper />
+              </div>
+            } 
+          />
+          
+          {/* Profile Sayfası - Protected Route */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-[#0D1117]">
+                  <ProfilePageWrapper />
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* 404 - Not Found */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
