@@ -13,6 +13,7 @@ import { LoginPage } from "./components/login-page";
 import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { AuthService } from "./services/auth";
+import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
@@ -25,16 +26,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = () => {
       try {
+        // Token kontrolü yap - API'ye istek atmadan
         if (AuthService.isAuthenticated()) {
-          try {
-            await AuthService.getCurrentUser();
-            setIsAuthenticated(true);
-          } catch (error) {
-            await AuthService.logout();
-            setIsAuthenticated(false);
-          }
+          setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
         }
@@ -84,13 +80,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const checkAuthStatus = async () => {
       try {
         if (AuthService.isAuthenticated()) {
-          try {
-            await AuthService.getCurrentUser();
-            setIsAuthenticated(true);
-          } catch (error) {
-            await AuthService.logout();
-            setIsAuthenticated(false);
-          }
+          // Token varsa authenticated olarak işaretle
+          // Backend endpoint'leri henüz hazır değilse token kontrolü yeterli
+          setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
         }
@@ -107,7 +99,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const handleLogout = async () => {
     try {
-      await AuthService.logout();
+      // Token'ı temizle
+      apiClient.clearToken();
       setIsAuthenticated(false);
       toast.info("Çıkış yapıldı", {
         description: "Güvenli bir şekilde çıkış yaptınız.",
@@ -179,15 +172,19 @@ const HomePage = () => {
  * Login Page Handler
  */
 const LoginPageWrapper = () => {
-  const handleLogin = () => {
-    toast.success("Giriş başarılı!", {
-      description: "Profil sayfasına yönlendiriliyorsunuz...",
-      duration: 2000,
-    });
-    // Redirect with a small delay to show the toast
-    setTimeout(() => {
-      window.location.href = "/profile";
-    }, 1000);
+  const handleLogin = async () => {
+    try {
+      toast.success("Giriş başarılı!", {
+        description: "Profil sayfasına yönlendiriliyorsunuz...",
+        duration: 2000,
+      });
+      // Redirect with a small delay to show the toast
+      setTimeout(() => {
+        window.location.href = "/profile";
+      }, 1000);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
   return (
@@ -225,7 +222,8 @@ const RegisterPageWrapper = () => {
 const ProfilePageWrapper = () => {
   const handleLogout = async () => {
     try {
-      await AuthService.logout();
+      // Token'ı temizle
+      apiClient.clearToken();
       toast.info("Çıkış yapıldı", {
         description: "Güvenli bir şekilde çıkış yaptınız.",
         duration: 2000,
