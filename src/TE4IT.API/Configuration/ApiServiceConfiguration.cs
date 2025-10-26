@@ -35,12 +35,32 @@ public static class ApiServiceConfiguration
     {
         services.AddRateLimiter(options =>
         {
+            // ✅ Refresh token için rate limiting
             options.AddFixedWindowLimiter(RateLimitPolicies.FixedRefresh, opt =>
             {
                 opt.Window = RateLimitPolicies.FixedRefreshPolicy.Window;
                 opt.PermitLimit = RateLimitPolicies.FixedRefreshPolicy.PermitLimit;
                 opt.QueueLimit = RateLimitPolicies.FixedRefreshPolicy.QueueLimit;
             });
+            
+            // ✅ Login endpoint'i için sıkı rate limiting
+            options.AddFixedWindowLimiter(RateLimitPolicies.AuthPolicy, opt =>
+            {
+                opt.Window = RateLimitPolicies.AuthPolicyConfig.Window;
+                opt.PermitLimit = RateLimitPolicies.AuthPolicyConfig.PermitLimit;
+                opt.QueueLimit = RateLimitPolicies.AuthPolicyConfig.QueueLimit;
+            });
+            
+            // ✅ Genel API için rate limiting
+            options.AddFixedWindowLimiter(RateLimitPolicies.ApiPolicy, opt =>
+            {
+                opt.Window = RateLimitPolicies.ApiPolicyConfig.Window;
+                opt.PermitLimit = RateLimitPolicies.ApiPolicyConfig.PermitLimit;
+                opt.QueueLimit = RateLimitPolicies.ApiPolicyConfig.QueueLimit;
+            });
+            
+            // ✅ Rate limit exceeded response
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });
         
         return services;

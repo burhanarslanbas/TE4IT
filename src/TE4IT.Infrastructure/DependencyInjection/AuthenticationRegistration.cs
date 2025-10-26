@@ -18,15 +18,25 @@ public static class AuthenticationRegistration
         services
             .AddIdentity<AppUser, IdentityRole<Guid>>(opt =>
             {
-                opt.Password.RequireDigit = false;
-                opt.Password.RequiredLength = 6;
-                opt.Password.RequireNonAlphanumeric = false;
-                opt.Password.RequireUppercase = false;
-                opt.Password.RequireLowercase = false;
+                // Güçlü password policy
+                opt.Password.RequireDigit = true;                    // ✅ Rakam zorunlu
+                opt.Password.RequiredLength = 8;                     // ✅ Minimum 8 karakter
+                opt.Password.RequireNonAlphanumeric = true;           // ✅ Özel karakter zorunlu
+                opt.Password.RequireUppercase = true;                  // ✅ Büyük harf zorunlu
+                opt.Password.RequireLowercase = true;                 // ✅ Küçük harf zorunlu
+                opt.Password.RequiredUniqueChars = 3;                  // ✅ En az 3 farklı karakter türü
+                
+                // User ayarları
                 opt.User.RequireUniqueEmail = true;
-                opt.Lockout.AllowedForNewUsers = false;
-                opt.Lockout.MaxFailedAccessAttempts = 10;
-                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                
+                // Güvenlik ayarları
+                opt.Lockout.AllowedForNewUsers = true;                // ✅ Yeni kullanıcılar için lockout
+                opt.Lockout.MaxFailedAccessAttempts = 5;              // ✅ 5 başarısız deneme
+                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // ✅ 15 dakika lockout
+                
+                // Güvenlik token ayarları
+                opt.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultProvider;
+                opt.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultProvider;
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
