@@ -34,7 +34,7 @@ public sealed class JwtTokenService(IConfiguration configuration) : ITokenServic
         }
 
         var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddHours(1);
+        var expires = DateTime.UtcNow.AddMinutes(15); // ✅ 15 dakika (güvenlik için kısa süre)
 
         var token = new JwtSecurityToken(
             issuer: issuer,
