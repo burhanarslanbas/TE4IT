@@ -23,9 +23,7 @@ public sealed class CreateProjectCommandValidator : AbstractValidator<CreateProj
             .When(x => x.Description != null)
             .WithMessage($"Proje açıklaması en fazla {DomainConstants.MaxProjectDescriptionLength} karakter olabilir.");
 
-        RuleFor(x => x.CreatorId)
-            .NotNull()
-            .WithMessage("Oluşturan kişi ID'si zorunludur.");
+        // CreatorId artık handler'da ICurrentUser üzerinden alınır; burada kontrol edilmez.
     }
 }
 
