@@ -45,15 +45,18 @@
 2. Aşağıdaki environment variables'ları ekleyin:
 
 ```
-CONNECTION_STRING=User Id=postgres.chrisnrtblexlktxwetq;Password=h+Hgg6sq@@c7#+W;Server=aws-1-eu-central-1.pooler.supabase.com;Port=5432;Database=postgres;SSL Mode=Require;Trust Server Certificate=true;Command Timeout=120;Timeout=120
+# ÖRNEK (PLACEHOLDER) DEĞERLER — GERÇEK GİZLİLERİ BURAYA YAZMAYIN!
+CONNECTION_STRING=User Id=postgres.[YOUR_USER];Password=[YOUR_PASSWORD];Server=[YOUR_DB_HOST];Port=5432;Database=[YOUR_DB];SSL Mode=Require;Trust Server Certificate=true;Command Timeout=120;Timeout=120
 
-JWT_ISSUER=https://te4it-api-[random].azurewebsites.net
+JWT_ISSUER=https://te4it-api-[your-app].azurewebsites.net
 JWT_AUDIENCE=te4it-api
-JWT_SIGNING_KEY=ToAyJiE3OPBfbv7GN0elgLNxxEwmXtd+7EyC76yxiss=
+JWT_SIGNING_KEY=[YOUR_32+_CHAR_RANDOM_SECRET]
 
-EMAIL_USERNAME=infoarslanbas@gmail.com
-EMAIL_PASSWORD=rzowjgsyptscottc
+EMAIL_USERNAME=[YOUR_EMAIL_USERNAME]
+EMAIL_PASSWORD=[YOUR_EMAIL_APP_PASSWORD]
 ```
+
+> Not: Gerçek gizli bilgiler Azure DevOps Library (Variable Groups) veya Azure Key Vault üzerinden yönetilmelidir. Pipeline'da bu değerleri değişken adıyla referans verin (ör. `$(JWT_SIGNING_KEY)`), dokümana veya repoya düz metin olarak koymayın.
 
 ## 🔄 CI/CD Pipeline Kurulumu
 

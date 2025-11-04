@@ -1,0 +1,142 @@
+---
+alwaysApply: true
+---
+## TE4IT Project Rules
+
+This document standardizes approaches, architecture, and technologies across TE4IT. It is derived from the current codebase and should be treated as the single source of truth for how we build and maintain the project.
+
+### 1) Architecture & Layers
+- **Overall**: Clean Architecture with clear separation of concerns.
+  - `TE4IT.Domain`: Entities, ValueObjects, Domain Events, Domain Exceptions, Enums, Specifications, Constants.
+  - `TE4IT.Application`: Use cases with CQRS via MediatR, request/response contracts, validators, behaviors.
+  - `TE4IT.Infrastructure`: Cross-cutting concerns (Auth, Token, Email, Authorization policies, CurrentUser, Role seeding) and integration adapters.
+  - `TE4IT.Persistence`: EF Core with PostgreSQL, Identity integration, repositories, UnitOfWork, DbContext, migrations, configurations.
+  - `TE4IT.API`: ASP.NET Core Web API, composition root, middleware pipeline, Swagger, CORS, authentication/authorization wiring.
+- **Frontend**: Vite + React + TypeScript (`frontend/`).
+- **Mobile**: Android (Kotlin) app (`mobile/`).
+
+### 2) Core Backend Approaches
+- **CQRS with MediatR**
+  - All application features follow Command/Query segregation using MediatR handlers.
+  - Pipeline behaviors include centralized validation (`ValidationBehavior<,>`).
+  - Feature structure: `Features/<BoundedContext>/(Commands|Queries)/<UseCase>`.
+
+- **Validation**
+  - Use FluentValidation for all requests entering the Application layer.
+  - Validators live beside their request types (e.g., `CreateXxxCommandValidator`).
+  - Validation runs automatically via the MediatR pipeline behavior; controllers stay thin.
+
+- **Persistence**
+  - EF Core 9 with Npgsql provider.
+  - DbContext: `AppDbContext` extends `IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>`.
+  - Repository abstractions live in `TE4IT.Application.Abstractions.Persistence`; concrete repos in `TE4IT.Persistence`.
+  - Use `UnitOfWork` for transactional boundaries at the Application layer when needed.
+  - Migrations kept in `TE4IT.Persistence/Migrations` and must be reproducible.
+
+- **Identity & Auth**
+  - ASP.NET Core Identity with JWT Bearer authentication.
+  - Strict password policy and lockout settings are enforced.
+  - JWT validation checks issuer, audience, signing key, lifetime, `NameIdentifier`, and `Role` claim.
+  - Token versioning enforced via `permissions_version` vs `SecurityStamp` on token validated event.
+  - Authorization policies are claim/role-based (example: `ProjectCreate`).
+
+- **API Composition Root**
+  - Service registration split by responsibility: `AddApiServices`, `AddApplicationServices`, `AddSecurityServices`.
+  - Middleware pipeline order:
+    1. Global exception middleware
+    2. HTTPS redirection
+    3. Swagger (Dev & Prod)
+    4. CORS (`Frontend` policy) before auth
+    5. Authentication → Authorization
+    6. Controllers mapping
+
+- **Error Handling**
+  - A single global exception middleware converts exceptions to consistent JSON responses.
+  - FluentValidation errors return 400 with field-level details.
+  - Domain exceptions map to appropriate HTTP status codes (400/401/404/500).
+  - All unhandled exceptions return a safe 500 response.
+
+- **Documentation & API**
+  - Swagger is enabled in all environments and hosted behind the API.
+  - Keep request/response schemas aligned with Application DTOs.
+
+### 3) Technologies & Versions
+- **.NET**: Target Framework `net9.0`.
+- **API**: ASP.NET Core Web API, Swagger (Swashbuckle 6.x), JWT Bearer.
+- **Auth**: Identity (EntityFrameworkCore), Microsoft IdentityModel Tokens 8.x.
+- **Application**: MediatR 12.x, FluentValidation 12.x.
+- **Persistence**: EF Core 9.x, Npgsql 9.x.
+- **Frontend**: Vite + React + TypeScript.
+- **Mobile**: Android (Kotlin).
+
+### 4) Coding Standards (C#)
+- **Naming**
+  - Classes/Methods: PascalCase; Variables: camelCase.
+  - Use descriptive, intention-revealing names; avoid abbreviations.
+  - Public types/methods use XML documentation summaries.
+
+- **Design**
+  - Keep methods focused and generally under ~30 lines.
+  - Prefer immutability and minimize side effects.
+  - Early returns over deep nesting; avoid broad try/catch unless required.
+  - Only create comments that capture non-obvious rationale, invariants, or caveats.
+
+- **Layering**
+  - No direct Infrastructure/Persistence calls from API or Domain. API talks to Application only.
+  - Domain contains no external dependencies.
+  - Keep DTOs and request contracts in Application; controllers translate HTTP to Application requests.
+
+### 5) API Guidelines
+- Controllers are thin: validation is automatic; business logic resides in MediatR handlers.
+- Respect CORS policy `Frontend` and do not introduce new ad-hoc CORS entries; update configuration method if needed.
+- Use authorization policies and roles consistently. Prefer policy checks for granular permissions.
+
+### 6) Data & Transactions
+- Write operations should commit via UnitOfWork patterns where applicable.
+- Repositories must not expose IQueryable outside Application. Encapsulate queries in handlers/specifications.
+- Add configuration classes for entities and keep them explicit under `Common/Configurations`.
+
+### 7) Error & Logging
+- Use the global exception middleware to surface errors consistently.
+- Use `ILogger<T>` for structured logs with meaningful, action-oriented messages.
+- Do not log sensitive data (passwords, tokens, secrets, PII beyond what’s necessary).
+
+### 8) Security
+- JWT keys, issuer, audience must come from configuration or environment variables (`JWT_SIGNING_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE`).
+- Cookies must not redirect on unauthorized/forbidden; APIs return 401/403 (already enforced).
+- Validate `permissions_version` (SecurityStamp) on each token as implemented; revoke by bumping SecurityStamp.
+- Enforce HTTPS; redirect is enabled globally.
+
+### 9) Testing
+- Unit test all Application handlers with focus on business rules and edge cases.
+- Validation rules must be tested independently of handlers.
+- Use in-memory or test containers for persistence tests; do not test against shared dev DBs.
+
+### 10) Git & CI/CD
+- Commit messages use Conventional Commits (`feat:`, `fix:`, `refactor:`, etc.).
+- Keep PRs small and focused; include clear descriptions of architecture impact.
+- Update docs (README/Architecture) for notable changes (new modules, cross-cutting changes, new policies).
+- Azure DevOps pipelines and deployment docs are canonical; follow the provided guides.
+
+### 11) Frontend & Mobile Integration
+- Follow `docs/api` integration guides for auth flows and endpoints.
+- Use the published Swagger for contracts; breaking changes must be versioned or agreed upon with clients.
+
+### 12) Adding New Features
+1. Define request/response contracts in Application.
+2. Add FluentValidation validators.
+3. Implement MediatR handler(s) and use repositories/UoW.
+4. Expose thin controller endpoints and map to requests.
+5. Add/adjust auth policy if needed.
+6. Add tests and update documentation.
+
+### 13) Configuration
+- Connection string read from `ConnectionStrings:Pgsql` or `CONNECTION_STRING` env.
+- Email settings read from `Email` section; env fallbacks `EMAIL_USERNAME`, `EMAIL_PASSWORD`.
+- Role seeding controlled by `RoleSeeding:Enabled` in configuration.
+
+### 14) Do/Don’t Quicklist
+- Do: Keep domain pure, validate at edges, use policies, keep controllers slim.
+- Do: Prefer granular permissions over broad roles when feasible.
+- Don’t: Bypass Application layer from API, return raw exceptions, or leak internal errors.
+- Don’t: Store secrets in code or logs; always use configuration and env vars.
