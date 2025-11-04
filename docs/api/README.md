@@ -117,6 +117,15 @@ Development: https://localhost:5001/api/v1
 - **iOS**: Swift, URLSession, Keychain, Web'e yönlendirme
 - **React Native**: AsyncStorage, Linking, Web'e yönlendirme
 
+## 🚀 Deployment
+
+- **[Frontend Azure Deployment](../deployment/FRONTEND_AZURE_DEPLOYMENT.md)** - Frontend geliştiriciler için Azure Static Web Apps deployment rehberi
+  - Environment variables setup
+  - Vite configuration
+  - Build configuration
+  - GitHub Actions setup
+  - Testing ve deployment checklist
+
 ## 📞 Destek
 
 API kullanımında sorun yaşarsanız:
