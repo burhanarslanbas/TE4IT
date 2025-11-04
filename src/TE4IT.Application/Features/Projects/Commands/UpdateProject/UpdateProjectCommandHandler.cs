@@ -17,7 +17,7 @@ public sealed class UpdateProjectCommandHandler(
         project.UpdateTitle(request.Title);
         project.UpdateDescription(request.Description);
 
-        await writeRepository.UpdateAsync(project, cancellationToken);
+        writeRepository.Update(project, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }

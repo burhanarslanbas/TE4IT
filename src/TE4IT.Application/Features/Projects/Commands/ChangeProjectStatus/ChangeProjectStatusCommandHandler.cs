@@ -15,7 +15,7 @@ public sealed class ChangeProjectStatusCommandHandler(
         if (project is null) return false;
 
         project.ChangeStatus(request.IsActive);
-        await writeRepository.UpdateAsync(project, cancellationToken);
+        writeRepository.Update(project, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
