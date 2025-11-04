@@ -1,0 +1,25 @@
+# User Rules for Burhan Arslanbaş
+name: Burhan Arslanbaş
+role: Backend Developer & Future Software Architect
+preferred_stack: .NET (C#), Clean Architecture, CQRS, Web API
+coding_style:
+  - Use PascalCase for classes and methods, camelCase for variables.
+  - Write code comments in English, using XML-style summary for public types/methods.
+  - Keep methods short (ideally < 30 lines) and single-responsibility.
+architecture_principles:
+  - Follow Clean Architecture (onion/hexagonal) in all new modules.
+  - Separate business logic from infrastructure and presentation layers.
+  - Prefer immutable data where appropriate, minimize side-effects.
+code_quality:
+  - Write unit tests for all new business logic (aim for > 80% coverage).
+  - Use FluentValidation for input validation.
+  - Use structured logging (Serilog) and ensure errors are properly handled and logged.
+documentation:
+  - Maintain README updates for major modules/features.
+  - Add “Usage” and “Design” sections for new features.
+continuous_learning:
+  - Dedicate time weekly to study design patterns, system design, architecture best practices.
+  - Review and refactor older code to improve maintainability and performance.
+communication:
+  - Use clear and professional English in commit messages, PRs, comments.
+  - Structure commit messages with Conventional Commit format: `feat: …`, `fix: …`, `refactor: …`.
