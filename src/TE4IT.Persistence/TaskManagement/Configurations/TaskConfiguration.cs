@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TE4IT.Domain.ValueObjects;
+using TE4IT.Persistence.Common.Identity;
 using DomainTask = TE4IT.Domain.Entities.Task;
 
 namespace TE4IT.Persistence.TaskManagement.Configurations;
@@ -23,6 +24,11 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<DomainTask>
             .HasForeignKey(t => t.UseCaseId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
+
+        // FK: Task.CreatorId -> AspNetUsers.Id
+        // FK: Task.AssigneeId -> AspNetUsers.Id
+        // Not: ValueObject conversion ile FK tanımı EF Core'da sorun çıkarıyor
+        // Migration'da manuel olarak SQL ile ekleniyor
     }
 }
 

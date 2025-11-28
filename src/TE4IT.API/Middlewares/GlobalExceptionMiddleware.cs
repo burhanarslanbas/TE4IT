@@ -43,11 +43,57 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            // Herhangi bir exception fırlatılırsa buraya gelir
-            _logger.LogError(ex, "Unhandled exception occurred: {Message}", ex.Message);
+            // Exception türüne göre uygun log seviyesi kullan
+            LogException(ex);
             
             // Exception'ı handle et ve HTTP response döndür
             await HandleExceptionAsync(context, ex);
+        }
+    }
+
+    /// <summary>
+    /// Exception türüne göre uygun log seviyesinde loglama yapar
+    /// </summary>
+    private void LogException(Exception exception)
+    {
+        switch (exception)
+        {
+            // BEKLENEN DURUMLAR - Warning veya Information seviyesinde logla
+            case ValidationException:
+                _logger.LogWarning(exception, "Validation failed: {Message}", exception.Message);
+                break;
+
+            case BusinessRuleViolationException:
+                _logger.LogWarning(exception, "Business rule violation: {Message}", exception.Message);
+                break;
+
+            case ResourceNotFoundException:
+                _logger.LogInformation(exception, "Resource not found: {Message}", exception.Message);
+                break;
+
+            case InvalidTaskStateTransitionException:
+            case TaskDependencyViolationException:
+                _logger.LogWarning(exception, "Task operation failed: {Message}", exception.Message);
+                break;
+
+            case DuplicateUserNameException:
+            case DuplicateEmailException:
+            case UserRegistrationFailedException:
+                _logger.LogWarning(exception, "User operation failed: {Message}", exception.Message);
+                break;
+
+            case InvalidCredentialsException:
+                _logger.LogInformation(exception, "Invalid credentials attempt");
+                break;
+
+            case UnauthorizedAccessException:
+                _logger.LogWarning(exception, "Unauthorized access attempt");
+                break;
+
+            // BEKLENMEYEN DURUMLAR - Error seviyesinde logla
+            default:
+                _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
+                break;
         }
     }
 
