@@ -71,9 +71,9 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] TE4IT.Application.Features.Projects.Commands.UpdateProject.UpdateProjectCommand command, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectRequest request, CancellationToken ct)
     {
-        if (id != command.ProjectId) return BadRequest("Mismatched id");
+        var command = new TE4IT.Application.Features.Projects.Commands.UpdateProject.UpdateProjectCommand(id, request.Title, request.Description);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -87,9 +87,9 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] TE4IT.Application.Features.Projects.Commands.ChangeProjectStatus.ChangeProjectStatusCommand command, CancellationToken ct)
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeProjectStatusRequest request, CancellationToken ct)
     {
-        if (id != command.ProjectId) return BadRequest("Mismatched id");
+        var command = new TE4IT.Application.Features.Projects.Commands.ChangeProjectStatus.ChangeProjectStatusCommand(id, request.IsActive);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -109,3 +109,13 @@ public class ProjectsController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 }
+
+/// <summary>
+/// Proje güncelleme request DTO
+/// </summary>
+public record UpdateProjectRequest(string Title, string? Description);
+
+/// <summary>
+/// Proje durum değiştirme request DTO
+/// </summary>
+public record ChangeProjectStatusRequest(bool IsActive);

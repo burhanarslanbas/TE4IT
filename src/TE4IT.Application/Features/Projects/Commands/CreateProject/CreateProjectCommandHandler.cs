@@ -20,7 +20,8 @@ public sealed class CreateProjectCommandHandler(
         {
             var count = await projectReadRepository.CountByCreatorAsync(creatorId.Value, cancellationToken);
             if (count >= 1)
-                throw new ArgumentException("Trial kullanıcı en fazla 1 proje oluşturabilir.");
+                throw new TE4IT.Domain.Exceptions.Common.BusinessRuleViolationException(
+                    "Trial kullanıcı en fazla 1 proje oluşturabilir.");
         }
         var project = Project.Create(creatorId, request.Title, request.Description);
         await projectRepository.AddAsync(project, cancellationToken);
