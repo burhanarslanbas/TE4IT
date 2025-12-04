@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vtys.data.local.TokenManager
+import com.example.vtys.data.network.AuthApiService
+import com.example.vtys.data.network.AuthInterceptor
 import com.example.vtys.data.repository.AuthRepositoryImpl
 import com.example.vtys.di.GsonModule
 import com.example.vtys.di.NetworkModule
@@ -37,11 +39,12 @@ fun RegisterScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val logging = remember { NetworkModule.provideLoggingInterceptor() }
-    val okHttp = remember { NetworkModule.provideOkHttpClient(logging) }
+    val tokenManager = remember(context) { TokenManager(context) }
+    val authInterceptor = remember(tokenManager) { NetworkModule.provideAuthInterceptor(tokenManager) }
+    val okHttp = remember(logging, authInterceptor) { NetworkModule.provideOkHttpClient(logging, authInterceptor) }
     val retrofit = remember { NetworkModule.provideRetrofit(okHttp) }
     val api = remember { NetworkModule.provideAuthApiService(retrofit) }
     val gson = remember { GsonModule.provideGson() }
-    val tokenManager = remember(context) { TokenManager(context) }
     val repo = remember { AuthRepositoryImpl(api, tokenManager, gson) }
     val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(repo))
     var userName by remember { mutableStateOf("") }
@@ -79,7 +82,7 @@ fun RegisterScreen(
                 title = { Text("Kayıt Ol") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToLogin) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
                     }
                 }
             )
@@ -234,4 +237,3 @@ fun RegisterScreen(
         }
     }
 }
-

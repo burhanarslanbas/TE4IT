@@ -1,13 +1,7 @@
-# 1. Android Proje Konfigürasyonu
-
-Bu projedeki tüm Android mobil kodları, aşağıdaki SDK ve dil versiyonlarına sıkı sıkıya bağlı kalmalıdır. Bu kurallar `mobile/build.gradle.kts` (veya `.gradle`) dosyası için geçerlidir.
-
-- **Compile Sdk:** 35
-- **Min Sdk:** 24
-- **Target Sdk:** 35
-- **Java Versiyonu:** 11 (`JavaVersion.VERSION_11`)
-- **Kotlin JVM Target:** "11"
-
+---
+trigger: always_on
+alwaysApply: true
+---
 # 2. Kodlama Dili, UI ve Geliştirme Felsefesi
 
 ## Dil ve UI Kütüphanesi
@@ -19,9 +13,9 @@ Bu projedeki tüm Android mobil kodları, aşağıdaki SDK ve dil versiyonların
 - **Parçalı Geliştirme:** Bu proje, API'lere bağımlı olarak adım adım geliştirilecektir. AI, sadece istenen *mevcut* göreve odaklanmalı, projenin tamamını bir anda bitirmeye veya gereksiz kod üretmeye çalışmamalıdır.
 - **Yıkıcı Olmayan Değişiklikler:** Mevcut kodda "keskin" veya "yıkıcı" (destructive) değişiklikler yapma. Kodun üzerine yazmak yerine, mevcut kodu refactor etmeyi veya iyileştirmeyi öner.
 - **Temiz Kod (Clean Code):**
-    - Kod **modüler, basit ve anlaşılır** olmalıdır.
-    - Fonksiyonlar kısa olmalı ve tek bir iş yapmalıdır (Single Responsibility Principle).
-    - Karmaşık Composable'lar, küçük ve yeniden kullanılabilir bileşenlere ayrılmalıdır.
+    - Kod **modüler, basit ve anlaşılır** olmalıdır.
+    - Fonksiyonlar kısa olmalı ve tek bir iş yapmalıdır (Single Responsibility Principle).
+    - Karmaşık Composable'lar, küçük ve yeniden kullanılabilir bileşenlere ayrılmalıdır.
 - **Hata Kontrolü:** AI, kodu yazarken olası hataları (null-safety, vb.) kontrol etmeli ve mevcut koddaki hataları düzeltmek için proaktif olarak önerilerde bulunmalıdır.
 - **Gradle Dosyaları:** `build.gradle` dosyalarında değişiklik yaparken çok dikkatli ol. Kütüphane eklemen istendiğinde, değişikliği doğrudan uygulamak yerine 'Bu değişikliği yap' veya 'Şu bağımlılığı ekle' şeklinde bir kod bloğu öner.
 
@@ -29,20 +23,20 @@ Bu projedeki tüm Android mobil kodları, aşağıdaki SDK ve dil versiyonların
 
 ## Mimari Model
 - **Mimari:** Proje, **MVVM (Model-View-ViewModel)** mimari desenini ve **Temiz Mimari (Clean Architecture)** prensiplerini takip edecektir.
-- **Paket Adı:** `mobile` klasörü altındaki ana paket adımız (root package) `com.te4it.mobile` olacaktır. (Eğer paket adınız farklı olacaksa lütfen belirtin, bu kuralı güncelleyelim.)
+- **Paket Adı:** `mobile` klasörü altındaki ana paket adımız (root package) `com.te4it.mobile` olacaktır.
 
 ## Katmanlı Yapı
 Tüm kodlar, bu ana paket (`com.te4it.mobile`) altında 3 ana katmana ayrılacaktır:
 
-1.  **`presentation`:**
-    -   Sadece UI ve UI mantığını içerir.
-    -   Alt paketleri: `screens` (Composable ekranlar), `components` (Yeniden kullanılabilir Composable'lar), `viewmodel` (ViewModel'ler).
-2.  **`domain`:**
-    -   Uygulamanın iş mantığını içerir. UI veya veri katmanına bağımlı olmamalıdır.
-    -   Alt paketleri: `repository` (Repository *arayüzleri*), `usecase` (İş mantığı sınıfları), `model` (Uygulama içi kullanılan veri modelleri).
-3.  **`data`:**
-    -   Veri kaynaklarını yönetir ve `domain` katmanındaki arayüzleri uygular.
-    -   Alt paketleri: `repository` (Repository *uygulamaları*), `network` (Retrofit servisleri), `database` (Room DAO'ları), `dto` (API'den gelen veri transfer objeleri).
+1.  **`presentation`:**
+    -   Sadece UI ve UI mantığını içerir.
+    -   Alt paketleri: `screens` (Composable ekranlar), `components` (Yeniden kullanılabilir Composable'lar), `viewmodel` (ViewModel'ler).
+2.  **`domain`:**
+    -   Uygulamanın iş mantığını içerir. UI veya veri katmanına bağımlı olmamalıdır.
+    -   Alt paketleri: `repository` (Repository *arayüzleri*), `usecase` (İş mantığı sınıfları), `model` (Uygulama içi kullanılan veri modelleri).
+3.  **`data`:**
+    -   Veri kaynaklarını yönetir ve `domain` katmanındaki arayüzleri uygular.
+    -   Alt paketleri: `repository` (Repository *uygulamaları*), `network` (Retrofit servisleri), `database` (Room DAO'ları), `dto` (API'den gelen veri transfer objeleri).
 
 AI, yeni bir özellik (feature) oluştururken dosyaları bu katmanlı yapıya uygun olarak doğru klasörlere yerleştirmek zorundadır.
 
@@ -51,9 +45,6 @@ AI, yeni bir özellik (feature) oluştururken dosyaları bu katmanlı yapıya uy
 
 Proje, modern Android geliştirmede endüstri standardı olan aşağıdaki kütüphaneleri kullanacaktır. AI, kod üretirken bu kütüphanelerin kullanımını önceliklendirmelidir.
 
-## Bağımlılık Enjeksiyonu (DI)
-- **Kütüphane:** `Hilt`
-- **Kural:** Tüm `ViewModel`'ler, `Repository`'ler ve diğer servis sınıfları Hilt kullanılarak enjekte edilmelidir. `@AndroidEntryPoint` ve `@HiltViewModel` gibi anotasyonlar aktif olarak kullanılmalıdır.
 
 ## Ağ (Networking)
 - **Kütüphane:** `Retrofit`
@@ -77,3 +68,22 @@ Proje, modern Android geliştirmede endüstri standardı olan aşağıdaki küt�
 - **Manuel Test:** Geliştirme sürecinde AI'dan, projenin derlenmiş bir halini (örn: `.apk` veya `.aab` dosyası) oluşturması veya sağlaması **istenmemektedir**.
 - **Geliştirici Sorumluluğu:** Projeyi bir emülatörde veya fiziksel cihazda çalıştırma, test etme ve doğrulama sorumluluğu **tamamen geliştiriciye (bana)** aittir.
 - **AI'ın Odak Noktası:** AI, yalnızca Android Studio'da "Run" (Çalıştır) butonuna basıldığında hatasız derlenecek **kaynak kodunu (Kotlin/Compose)** ve **konfigürasyon dosyalarını (Gradle)** üretmeye odaklanmalıdır.
+
+# 6. Gradle Koruması ve Bağımlılık Uyumluluğu
+
+## 1. Gradle Dosyaları Koruması (Read-Only)
+- **Kural:** Projenin `build.gradle.kts` ve `libs.versions.toml` dosyaları şu anda stabildir ve sorunsuz çalışmaktadır.
+- **YASAK:** AI'ın bu dosyaları *değiştirmesi*, *üzerine yazması* veya *gereksiz yere modifiye etmesi* KESİNLİKLE YASAKTIR.
+
+## 2. Kodun Gradle'a Uyumu
+- **AI'ın Görevi:** AI'ın birincil görevi, bu mevcut Gradle dosyalarını *okumak* ve *analiz etmektir*.
+- **Kural:** Üretilen tüm Kotlin/Compose kodları, `build.gradle.kts` içinde **zaten tanımlanmış olan** bağımlılıklara ve versiyonlara %100 uyumlu olarak yazılmalıdır.
+- **Örnek:** Eğer projede `Room v2.6.1` tanımlıysa, AI `Room v2.7.0`'a ait yeni bir özelliği kullanan kod yazamaz.
+
+## 3. Yeni Bağımlılık Önerisi
+- **Kural:** Eğer yeni bir özellik için projede *bulunmayan* bir kütüphaneye (örn: resim yüklemek için `Coil`) ihtiyaç duyuluyorsa, AI bu bağımlılığı dosyaya **eklememelidir**.
+- **Doğru Davranış:** AI, bunun yerine, geliştiriciye (bana) "Bu özelliği eklemek için `implementation '...'` bağımlılığını `build.gradle.kts` dosyanıza manuel olarak eklemeniz gerekmektedir" şeklinde net bir öneride bulunmalıdır.
+
+
+# 7. İletişim Dili
+chat benimle türkçe iletişime geçecek türkçe cevaplar verecek
