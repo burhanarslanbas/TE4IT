@@ -13,6 +13,9 @@ import { LoginPage } from "./components/login-page";
 import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { ForgotPasswordPage } from "./components/forgot-password-page";
+import { ProjectsListPage } from "./pages/ProjectsListPage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
+import { ModuleDetailPage } from "./pages/ModuleDetailPage";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
@@ -305,6 +308,36 @@ export default function App() {
                 <div className="min-h-screen bg-[#0D1117]">
                   <ProfilePageWrapper />
                 </div>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Projects List - Protected Route */}
+          <Route 
+            path="/projects" 
+            element={
+              <ProtectedRoute>
+                <ProjectsListPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Project Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId" 
+            element={
+              <ProtectedRoute>
+                <ProjectDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Module Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId" 
+            element={
+              <ProtectedRoute>
+                <ModuleDetailPage />
               </ProtectedRoute>
             } 
           />

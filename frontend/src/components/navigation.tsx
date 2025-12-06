@@ -48,6 +48,13 @@ export function Navigation({ isAuthenticated = false, onLogout }: NavigationProp
                 <Button 
                   variant="ghost" 
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
+                  onClick={() => navigate("/projects")}
+                >
+                  Projects
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
                   onClick={() => navigate("/profile")}
                 >
                   Profil

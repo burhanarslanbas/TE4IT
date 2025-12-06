@@ -5,7 +5,8 @@ import { Button } from "./ui/button";
 import { ProfileInfo } from "./profile-sections/profile-info";
 import { SecuritySettings } from "./profile-sections/security-settings";
 import { AppSettings } from "./profile-sections/app-settings";
-import { User, Shield, Settings, LogOut, ArrowLeft, Menu, X } from "lucide-react";
+import { User, Shield, Settings, LogOut, ArrowLeft, Menu, X, FolderKanban } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Toaster } from "./ui/sonner";
 import { toast } from "sonner@2.0.3";
 
@@ -17,6 +18,7 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<SectionType>("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -81,6 +83,15 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
             </div>
             
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/projects")}
+                className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#8B5CF6]/10 border border-[#8B5CF6]/30"
+              >
+                <FolderKanban className="w-4 h-4 mr-2" />
+                Projects
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
