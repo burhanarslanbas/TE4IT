@@ -7,6 +7,7 @@ using TE4IT.Application.Features.Projects.Commands.CreateProject;
 using TE4IT.Application.Features.Projects.Queries.GetProjectById;
 using TE4IT.Application.Features.Projects.Queries.ListProjects;
 using TE4IT.Application.Features.Projects.Responses;
+using TE4IT.Domain.Constants;
 
 namespace TE4IT.API.Controllers;
 
@@ -49,6 +50,9 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     /// Yeni proje oluşturur    
     /// </summary> 
     [HttpPost]
+    // Role based authorization
+    // [Authorize (Roles = $"{RoleNames.Administrator},{RoleNames.OrganizationManager},{RoleNames.TeamLead},{RoleNames.Trainer}")]
+    // Policy based authorization
     [Authorize(Policy = "ProjectCreate")]
     [ProducesResponseType(typeof(CreateProjectCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,4 +62,60 @@ public class ProjectsController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
+
+    /// <summary>
+    /// Projeyi günceller
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "ProjectUpdate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectRequest request, CancellationToken ct)
+    {
+        var command = new TE4IT.Application.Features.Projects.Commands.UpdateProject.UpdateProjectCommand(id, request.Title, request.Description);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Proje aktif/pasif durumunu değiştirir
+    /// </summary>
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Policy = "ProjectUpdate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeProjectStatusRequest request, CancellationToken ct)
+    {
+        var command = new TE4IT.Application.Features.Projects.Commands.ChangeProjectStatus.ChangeProjectStatusCommand(id, request.IsActive);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Projeyi siler
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "ProjectDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var ok = await mediator.Send(new TE4IT.Application.Features.Projects.Commands.DeleteProject.DeleteProjectCommand(id), ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
 }
+
+/// <summary>
+/// Proje güncelleme request DTO
+/// </summary>
+public record UpdateProjectRequest(string Title, string? Description);
+
+/// <summary>
+/// Proje durum değiştirme request DTO
+/// </summary>
+public record ChangeProjectStatusRequest(bool IsActive);

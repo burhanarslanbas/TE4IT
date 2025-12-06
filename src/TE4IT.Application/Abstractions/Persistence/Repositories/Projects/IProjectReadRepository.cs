@@ -4,4 +4,5 @@ namespace TE4IT.Abstractions.Persistence.Repositories.Projects;
 
 public interface IProjectReadRepository : IReadRepository<Domain.Entities.Project>
 {
+    Task<int> CountByCreatorAsync(Guid creatorId, CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TE4IT.Domain.Entities;
 using TE4IT.Domain.ValueObjects;
+using TE4IT.Persistence.Common.Identity;
 
 namespace TE4IT.Persistence.TaskManagement.Configurations;
 
@@ -20,6 +21,10 @@ public sealed class ModuleConfiguration : IEntityTypeConfiguration<Module>
             .HasForeignKey(m => m.ProjectId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
+
+        // FK: Module.CreatorId -> AspNetUsers.Id
+        // Not: ValueObject conversion ile FK tanımı EF Core'da sorun çıkarıyor
+        // Migration'da manuel olarak SQL ile ekleniyor
     }
 }
 
