@@ -14,7 +14,12 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<DomainTask>
         b.Property(t => t.Description).HasMaxLength(2000);
         b.Property(t => t.ImportantNotes).HasMaxLength(1000);
         b.Property(t => t.CreatorId).HasConversion(v => v.Value, v => (UserId)v);
-        b.Property(t => t.AssigneeId).HasConversion(v => v.Value, v => (UserId)v);
+        b.Property(t => t.AssigneeId)
+            .HasConversion(
+                v => v != null ? v.Value : (Guid?)null,
+                v => v != null ? (UserId)v.Value : null)
+            .IsRequired(false);
+        b.Property(t => t.StartedDate).IsRequired(false);
         b.HasKey(x => x.Id);
         b.HasIndex(x => x.UseCaseId);
         b.HasIndex(x => x.AssigneeId);

@@ -1,3 +1,5 @@
+using TE4IT.Domain.Enums;
+
 namespace TE4IT.Application.Abstractions.Email;
 
 /// <summary>
@@ -19,4 +21,9 @@ public interface IEmailTemplateService
     /// Şifre değişikliği bildirimi email şablonu
     /// </summary>
     string GetPasswordChangeNotificationTemplate(string email);
+    
+    /// <summary>
+    /// Proje daveti email şablonu
+    /// </summary>
+    string GetProjectInvitationTemplate(string projectTitle, string inviterName, ProjectRole role, string acceptLink, DateTime expiresAt);
 }

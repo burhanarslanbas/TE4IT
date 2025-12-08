@@ -22,6 +22,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\TE4IT.Application\TE4IT.Application.csproj" />
     <ProjectReference Include="..\..\TE4IT.Domain\TE4IT.Domain.csproj" />
+    <ProjectReference Include="..\..\TE4IT.Infrastructure\TE4IT.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\TE4IT.API\TE4IT.API.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
 </Project>

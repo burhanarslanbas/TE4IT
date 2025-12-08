@@ -1,4 +1,5 @@
 using TE4IT.Domain.Entities;
+using TE4IT.Domain.Enums;
 using TE4IT.Domain.ValueObjects;
 using TaskEntity = TE4IT.Domain.Entities.Task;
 
@@ -36,34 +37,38 @@ public interface IUserPermissionService
     /// <summary>
     /// Kullanıcının görevi görüntüleme yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="task">Görev</param>
+    /// <param name="project">Proje</param>
     /// <returns>Görüntüleme yetkisi varsa true, aksi halde false</returns>
-    bool CanViewTask(UserId userId, TaskEntity task);
+    bool CanViewTask(UserId userId, TaskEntity task, Project project);
 
     /// <summary>
     /// Kullanıcının görevi düzenleme yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="task">Görev</param>
+    /// <param name="project">Proje</param>
     /// <returns>Düzenleme yetkisi varsa true, aksi halde false</returns>
-    bool CanEditTask(UserId userId, TaskEntity task);
+    bool CanEditTask(UserId userId, TaskEntity task, Project project);
 
     /// <summary>
     /// Kullanıcının görevi silme yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="task">Görev</param>
+    /// <param name="project">Proje</param>
     /// <returns>Silme yetkisi varsa true, aksi halde false</returns>
-    bool CanDeleteTask(UserId userId, TaskEntity task);
+    bool CanDeleteTask(UserId userId, TaskEntity task, Project project);
 
     /// <summary>
     /// Kullanıcının görevi atama yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="task">Görev</param>
+    /// <param name="project">Proje</param>
     /// <returns>Atama yetkisi varsa true, aksi halde false</returns>
-    bool CanAssignTask(UserId userId, TaskEntity task);
+    bool CanAssignTask(UserId userId, TaskEntity task, Project project);
 
     /// <summary>
     /// Kullanıcının modül oluşturma yetkisi olup olmadığını kontrol eder
@@ -76,26 +81,28 @@ public interface IUserPermissionService
     /// <summary>
     /// Kullanıcının use case oluşturma yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="module">Modül</param>
+    /// <param name="project">Proje</param>
     /// <returns>Use case oluşturma yetkisi varsa true, aksi halde false</returns>
-    bool CanCreateUseCase(UserId userId, Module module);
+    bool CanCreateUseCase(UserId userId, Module module, Project project);
 
     /// <summary>
     /// Kullanıcının görev oluşturma yetkisi olup olmadığını kontrol eder
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı</param>
     /// <param name="useCase">Use case</param>
+    /// <param name="project">Proje</param>
     /// <returns>Görev oluşturma yetkisi varsa true, aksi halde false</returns>
-    bool CanCreateTask(UserId userId, UseCase useCase);
+    bool CanCreateTask(UserId userId, UseCase useCase, Project project);
 
     /// <summary>
     /// Kullanıcının proje rolünü getirir
     /// </summary>
-    /// <param name="user">Kullanıcı</param>
+    /// <param name="userId">Kullanıcı ID'si</param>
     /// <param name="project">Proje</param>
-    /// <returns>Proje rolü</returns>
-    ProjectRole GetUserProjectRole(UserId userId, Project project);
+    /// <returns>Proje rolü. Kullanıcı proje üyesi değilse veya proje null ise null döner.</returns>
+    ProjectRole? GetUserProjectRole(UserId userId, Project project);
 
     /// <summary>
     /// Kullanıcının sistem yöneticisi olup olmadığını kontrol eder
@@ -103,17 +110,4 @@ public interface IUserPermissionService
     /// <param name="user">Kullanıcı</param>
     /// <returns>Sistem yöneticisi ise true, aksi halde false</returns>
     bool IsSystemAdministrator(UserId userId);
-}
-
-/// <summary>
-/// Proje rolleri
-/// </summary>
-public enum ProjectRole
-{
-    None = 0,
-    Viewer = 1,
-    Member = 2,
-    Manager = 3,
-    Admin = 4,
-    Owner = 5
 }

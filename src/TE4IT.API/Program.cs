@@ -8,7 +8,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Service Registration - Clean ve organized
 builder.Services
     .AddApiServices()
-    .AddApplicationServices(builder.Configuration)
+    .AddApplicationServices(builder.Configuration, builder.Environment)
     .AddSecurityServices(builder.Configuration);
 
 var app = builder.Build();
