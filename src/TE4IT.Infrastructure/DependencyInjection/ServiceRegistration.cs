@@ -25,6 +25,7 @@ public static class ServiceRegistration
 		services.AddScoped<IUserInfoService, UserInfoService>();
 		services.AddScoped<IUserAccountService, UserAccountService>();
 		services.AddScoped<IRolePermissionService, RolePermissionService>();
+		services.AddScoped<Domain.Services.IUserPermissionService, UserPermissionService>();
 		services.AddScoped<IPolicyAuthorizer, PolicyAuthorizer>();
 		services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
@@ -36,6 +37,9 @@ public static class ServiceRegistration
 
 		// Add Email Options (minimal config: Username + Password)
 		services.Configure<EmailOptions>(configuration.GetSection("Email"));
+		
+		// Add Project Invitation Options
+		services.Configure<ProjectInvitationOptions>(configuration.GetSection("ProjectInvitation"));
 		
 		// Azure App Service için environment variables'dan email settings oku
 		services.PostConfigure<EmailOptions>(opt =>
@@ -62,6 +66,9 @@ public static class ServiceRegistration
 		
 		// URL Service
 		services.AddScoped<IUrlService, UrlService>();
+
+		// Invitation Token Service
+		services.AddScoped<IInvitationTokenService, InvitationTokenService>();
 
 		return services;
 	}

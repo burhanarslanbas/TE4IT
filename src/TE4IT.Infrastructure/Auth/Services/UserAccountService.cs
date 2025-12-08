@@ -99,5 +99,17 @@ public sealed class UserAccountService(UserManager<AppUser> userManager, SignInM
         var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         return result.Succeeded;
     }
+
+    public async Task<UserInfo?> GetUserByEmailAsync(string email, CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+            return null;
+
+        var roles = await userManager.GetRolesAsync(user);
+        var permissionsVersion = await userManager.GetSecurityStampAsync(user);
+
+        return new UserInfo(user.Id, user.UserName ?? user.Email ?? string.Empty, user.Email ?? string.Empty, roles, permissionsVersion);
+    }
 }
 

@@ -11,11 +11,11 @@ public class Task : AggregateRoot
 {
     public Guid UseCaseId { get; private set; } // Bağlı olduğu UseCase
     public UserId CreatorId { get; private set; } = null!; // Oluşturan Kişi
-    public UserId AssigneeId { get; private set; } = null!; // Atanan Kişi
+    public UserId? AssigneeId { get; private set; } // Atanan Kişi (başlangıçta null olabilir)
     public string Title { get; private set; } = string.Empty; // Başlık
     public string? Description { get; private set; } // Açıklama
     public string? ImportantNotes { get; private set; } // Önemli Notlar
-    public DateTime StartedDate { get; private set; } = default; // Başlangıç Tarihi
+    public DateTime? StartedDate { get; private set; } // Başlangıç Tarihi (sadece başlatıldığında set edilir)
     public DateTime? DueDate { get; private set; } // Bitiş Tarihi
     public TaskType TaskType { get; private set; } // Görev tipi (Özellik, Dokümantasyon, Test, Hata Düzeltme vb.)
     public TaskState TaskState { get; private set; } = TaskState.NotStarted; // Başlangıç durumu NotStarted olarak ayarlandı
@@ -37,11 +37,11 @@ public class Task : AggregateRoot
         {
             UseCaseId = useCaseId,
             CreatorId = creatorId,
-            AssigneeId = creatorId, // Varsayılan olarak oluşturan kişiye atanır
+            AssigneeId = null, // Başlangıçta atanmamış
             Title = title,
             Description = description,
             ImportantNotes = importantNotes,
-            StartedDate = DateTime.UtcNow,
+            StartedDate = null, // Başlangıçta başlatılmamış
             TaskType = taskType,
             TaskState = TaskState.NotStarted
         };
@@ -57,6 +57,9 @@ public class Task : AggregateRoot
         if (TaskState != TaskState.NotStarted)
             throw new InvalidTaskStateTransitionException(TaskState, TaskState.InProgress);
 
+        if (AssigneeId == null)
+            throw new InvalidOperationException("Görev başlatılmadan önce bir kişiye atanmış olmalıdır.");
+
         TaskState = TaskState.InProgress;
         StartedDate = DateTime.UtcNow;
         UpdatedDate = DateTime.UtcNow;
@@ -71,6 +74,9 @@ public class Task : AggregateRoot
     {
         if (TaskState != TaskState.InProgress)
             throw new InvalidTaskStateTransitionException(TaskState, TaskState.Completed);
+
+        if (AssigneeId == null)
+            throw new InvalidOperationException("Atanmamış görev tamamlanamaz.");
 
         TaskState = TaskState.Completed;
         UpdatedDate = DateTime.UtcNow;
@@ -89,7 +95,8 @@ public class Task : AggregateRoot
         TaskState = TaskState.Cancelled;
         UpdatedDate = DateTime.UtcNow;
 
-        AddDomainEvent(new TaskCancelledEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType));
+        if (AssigneeId != null)
+            AddDomainEvent(new TaskCancelledEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType));
     }
 
     /// <summary>
@@ -103,7 +110,8 @@ public class Task : AggregateRoot
         TaskState = TaskState.NotStarted;
         UpdatedDate = DateTime.UtcNow;
 
-        AddDomainEvent(new TaskRevertedEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType));
+        if (AssigneeId != null)
+            AddDomainEvent(new TaskRevertedEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType));
     }
 
     /// <summary>
@@ -155,7 +163,7 @@ public class Task : AggregateRoot
     /// </summary>
     public void UpdateDueDate(DateTime? dueDate)
     {
-        if (dueDate.HasValue && dueDate.Value < StartedDate)
+        if (dueDate.HasValue && StartedDate.HasValue && dueDate.Value < StartedDate.Value)
             throw new ArgumentException(DomainConstants.InvalidDateRangeMessage, nameof(dueDate));
 
         DueDate = dueDate;
