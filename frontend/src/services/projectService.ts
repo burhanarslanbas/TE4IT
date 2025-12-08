@@ -1,98 +1,129 @@
 /**
- * Project API Servisleri
+ * Project Service
+ * Project ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   Project,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectListResponse,
+  PaginationParams,
+  PaginationResponse,
   ProjectFilters,
+  ChangeStatusRequest,
+  Module,
+  ModuleFilters,
+  CreateModuleRequest,
 } from '../types';
 
-export class ProjectService {
+export const projectService = {
   /**
    * Proje listesini getir
    */
-  static async getProjects(filters?: ProjectFilters): Promise<ProjectListResponse> {
-    const params = new URLSearchParams();
-    
-    if (filters?.page) params.append('page', filters.page.toString());
-    if (filters?.pageSize) params.append('pageSize', filters.pageSize.toString());
-    if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
-    if (filters?.search) params.append('search', filters.search);
+  async list(
+    params: PaginationParams & ProjectFilters
+  ): Promise<ApiResponse<PaginationResponse<Project>>> {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      pageSize: params.pageSize.toString(),
+    });
 
-    const queryString = params.toString();
-    const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ''}`;
-    
-    const response = await apiClient.get<ProjectListResponse>(endpoint);
-    
-    if (response.success && response.data) {
-      return response.data;
+    if (params.isActive !== null && params.isActive !== undefined) {
+      queryParams.append('isActive', params.isActive.toString());
     }
-    
-    throw new Error('Projeler yüklenemedi');
-  }
+
+    if (params.search) {
+      queryParams.append('search', params.search);
+    }
+
+    return apiClient.get<PaginationResponse<Project>>(
+      `/api/v1/projects?${queryParams.toString()}`
+    );
+  },
 
   /**
    * Proje detayını getir
    */
-  static async getProject(projectId: string): Promise<Project> {
-    const response = await apiClient.get<Project>(`/api/v1/projects/${projectId}`);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Proje bulunamadı');
-  }
+  async getById(projectId: string): Promise<ApiResponse<Project>> {
+    return apiClient.get<Project>(`/api/v1/projects/${projectId}`);
+  },
 
   /**
    * Yeni proje oluştur
    */
-  static async createProject(data: CreateProjectRequest): Promise<Project> {
-    const response = await apiClient.post<Project>('/api/v1/projects', data);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Proje oluşturulamadı');
-  }
+  async create(
+    data: CreateProjectRequest
+  ): Promise<ApiResponse<Project>> {
+    return apiClient.post<Project>('/api/v1/projects', data);
+  },
 
   /**
    * Proje güncelle
    */
-  static async updateProject(projectId: string, data: UpdateProjectRequest): Promise<Project> {
-    const response = await apiClient.put<Project>(`/api/v1/projects/${projectId}`, data);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Proje güncellenemedi');
-  }
+  async update(
+    projectId: string,
+    data: UpdateProjectRequest
+  ): Promise<ApiResponse<Project>> {
+    return apiClient.put<Project>(`/api/v1/projects/${projectId}`, data);
+  },
 
   /**
    * Proje durumunu değiştir (Active/Archived)
    */
-  static async updateProjectStatus(projectId: string, status: 'Active' | 'Archived'): Promise<void> {
-    const response = await apiClient.patch(`/api/v1/projects/${projectId}/status`, { status });
-    
-    if (!response.success) {
-      throw new Error('Proje durumu güncellenemedi');
-    }
-  }
+  async changeStatus(
+    projectId: string,
+    data: ChangeStatusRequest
+  ): Promise<ApiResponse<Project>> {
+    return apiClient.patch<Project>(
+      `/api/v1/projects/${projectId}/status`,
+      data
+    );
+  },
 
   /**
    * Proje sil
    */
-  static async deleteProject(projectId: string): Promise<void> {
-    const response = await apiClient.delete(`/api/v1/projects/${projectId}`);
-    
-    if (!response.success) {
-      throw new Error('Proje silinemedi');
+  async delete(projectId: string): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`/api/v1/projects/${projectId}`);
+  },
+
+  /**
+   * Proje modüllerini getir
+   */
+  async getModules(
+    projectId: string,
+    params: PaginationParams & ModuleFilters
+  ): Promise<ApiResponse<PaginationResponse<Module>>> {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      pageSize: params.pageSize.toString(),
+    });
+
+    if (params.isActive !== null && params.isActive !== undefined) {
+      queryParams.append('status', params.isActive ? 'Active' : 'Archived');
     }
-  }
-}
+
+    if (params.search) {
+      queryParams.append('search', params.search);
+    }
+
+    return apiClient.get<PaginationResponse<Module>>(
+      `/api/v1/projects/${projectId}/modules?${queryParams.toString()}`
+    );
+  },
+
+  /**
+   * Proje için modül oluştur
+   */
+  async createModule(
+    projectId: string,
+    data: CreateModuleRequest
+  ): Promise<ApiResponse<Module>> {
+    return apiClient.post<Module>(
+      `/api/v1/projects/${projectId}/modules`,
+      data
+    );
+  },
+};
 

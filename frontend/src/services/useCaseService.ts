@@ -1,100 +1,108 @@
 /**
- * UseCase API Servisleri
+ * UseCase Service
+ * UseCase ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   UseCase,
   CreateUseCaseRequest,
   UpdateUseCaseRequest,
-  UseCaseListResponse,
+  PaginationParams,
+  PaginationResponse,
   UseCaseFilters,
+  ChangeStatusRequest,
+  Task,
+  TaskFilters,
+  CreateTaskRequest,
 } from '../types';
 
-export class UseCaseService {
-  /**
-   * Modül use case'lerini getir
-   */
-  static async getUseCases(moduleId: string, filters?: UseCaseFilters): Promise<UseCaseListResponse> {
-    const params = new URLSearchParams();
-    
-    if (filters?.page) params.append('page', filters.page.toString());
-    if (filters?.pageSize) params.append('pageSize', filters.pageSize.toString());
-    if (filters?.status && filters.status !== 'All') {
-      params.append('status', filters.status);
-    }
-    if (filters?.search) params.append('search', filters.search);
-
-    const queryString = params.toString();
-    const endpoint = `/api/v1/modules/${moduleId}/usecases${queryString ? `?${queryString}` : ''}`;
-    
-    const response = await apiClient.get<UseCaseListResponse>(endpoint);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Use case\'ler yüklenemedi');
-  }
-
+export const useCaseService = {
   /**
    * Use case detayını getir
    */
-  static async getUseCase(useCaseId: string): Promise<UseCase> {
-    const response = await apiClient.get<UseCase>(`/api/v1/usecases/${useCaseId}`);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Use case bulunamadı');
-  }
-
-  /**
-   * Yeni use case oluştur
-   */
-  static async createUseCase(moduleId: string, data: CreateUseCaseRequest): Promise<UseCase> {
-    const response = await apiClient.post<UseCase>(`/api/v1/modules/${moduleId}/usecases`, data);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Use case oluşturulamadı');
-  }
+  async getById(useCaseId: string): Promise<ApiResponse<UseCase>> {
+    return apiClient.get<UseCase>(`/api/v1/usecases/${useCaseId}`);
+  },
 
   /**
    * Use case güncelle
    */
-  static async updateUseCase(useCaseId: string, data: UpdateUseCaseRequest): Promise<UseCase> {
-    const response = await apiClient.put<UseCase>(`/api/v1/usecases/${useCaseId}`, data);
-    
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    throw new Error('Use case güncellenemedi');
-  }
+  async update(
+    useCaseId: string,
+    data: UpdateUseCaseRequest
+  ): Promise<ApiResponse<UseCase>> {
+    return apiClient.put<UseCase>(`/api/v1/usecases/${useCaseId}`, data);
+  },
 
   /**
    * Use case durumunu değiştir (Active/Archived)
    */
-  static async updateUseCaseStatus(useCaseId: string, status: 'Active' | 'Archived'): Promise<void> {
-    const response = await apiClient.patch(`/api/v1/usecases/${useCaseId}/status`, { status });
-    
-    if (!response.success) {
-      throw new Error('Use case durumu güncellenemedi');
-    }
-  }
+  async changeStatus(
+    useCaseId: string,
+    data: ChangeStatusRequest
+  ): Promise<ApiResponse<UseCase>> {
+    return apiClient.patch<UseCase>(
+      `/api/v1/usecases/${useCaseId}/status`,
+      data
+    );
+  },
 
   /**
    * Use case sil
    */
-  static async deleteUseCase(useCaseId: string): Promise<void> {
-    const response = await apiClient.delete(`/api/v1/usecases/${useCaseId}`);
-    
-    if (!response.success) {
-      throw new Error('Use case silinemedi');
+  async delete(useCaseId: string): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`/api/v1/usecases/${useCaseId}`);
+  },
+
+  /**
+   * Use case task'larını getir
+   */
+  async getTasks(
+    useCaseId: string,
+    params: PaginationParams & TaskFilters
+  ): Promise<ApiResponse<PaginationResponse<Task>>> {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      pageSize: params.pageSize.toString(),
+    });
+
+    if (params.state !== null && params.state !== undefined) {
+      queryParams.append('state', params.state);
     }
-  }
-}
+
+    if (params.type !== null && params.type !== undefined) {
+      queryParams.append('type', params.type);
+    }
+
+    if (params.assigneeId) {
+      queryParams.append('assignee', params.assigneeId);
+    }
+
+    if (params.dueDate) {
+      queryParams.append('dueDate', params.dueDate);
+    }
+
+    if (params.search) {
+      queryParams.append('search', params.search);
+    }
+
+    return apiClient.get<PaginationResponse<Task>>(
+      `/api/v1/usecases/${useCaseId}/tasks?${queryParams.toString()}`
+    );
+  },
+
+  /**
+   * Use case için task oluştur
+   */
+  async createTask(
+    useCaseId: string,
+    data: CreateTaskRequest
+  ): Promise<ApiResponse<Task>> {
+    return apiClient.post<Task>(
+      `/api/v1/usecases/${useCaseId}/tasks`,
+      data
+    );
+  },
+};
 

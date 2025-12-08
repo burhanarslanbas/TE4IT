@@ -1,14 +1,26 @@
 /**
- * TE4IT Frontend - Type Definitions
- * Tüm entity'ler için TypeScript tipleri
+ * TE4IT Frontend Type Definitions
+ * Tüm entity'ler ve API response tipleri için TypeScript tanımlamaları
  */
 
+// ==================== Base Types ====================
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles?: string[];
+  permissions?: string[];
+}
+
 // ==================== Project Types ====================
+
 export interface Project {
   id: string;
   title: string;
   description?: string;
-  status: 'Active' | 'Archived';
+  isActive: boolean;
   startedDate: string;
   createdAt: string;
   updatedAt: string;
@@ -24,21 +36,14 @@ export interface UpdateProjectRequest {
   description?: string;
 }
 
-export interface ProjectListResponse {
-  items: Project[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 // ==================== Module Types ====================
+
 export interface Module {
   id: string;
   projectId: string;
   title: string;
   description?: string;
-  status: 'Active' | 'Archived';
+  isActive: boolean;
   useCaseCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -54,22 +59,15 @@ export interface UpdateModuleRequest {
   description?: string;
 }
 
-export interface ModuleListResponse {
-  items: Module[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 // ==================== UseCase Types ====================
+
 export interface UseCase {
   id: string;
   moduleId: string;
   title: string;
   description?: string;
   importantNotes?: string;
-  status: 'Active' | 'Archived';
+  isActive: boolean;
   taskCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -87,17 +85,21 @@ export interface UpdateUseCaseRequest {
   importantNotes?: string;
 }
 
-export interface UseCaseListResponse {
-  items: UseCase[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+// ==================== Task Types ====================
+
+export enum TaskType {
+  Documentation = 'Documentation',
+  Feature = 'Feature',
+  Test = 'Test',
+  Bug = 'Bug',
 }
 
-// ==================== Task Types ====================
-export type TaskType = 'Documentation' | 'Feature' | 'Test' | 'Bug';
-export type TaskState = 'NotStarted' | 'InProgress' | 'Completed' | 'Cancelled';
+export enum TaskState {
+  NotStarted = 'NotStarted',
+  InProgress = 'InProgress',
+  Completed = 'Completed',
+  Cancelled = 'Cancelled',
+}
 
 export interface Task {
   id: string;
@@ -108,7 +110,7 @@ export interface Task {
   type: TaskType;
   state: TaskState;
   assigneeId?: string;
-  assigneeName?: string;
+  assignee?: User;
   startedDate?: string;
   dueDate?: string;
   createdAt: string;
@@ -131,16 +133,14 @@ export interface UpdateTaskRequest {
   dueDate?: string;
 }
 
-export interface TaskListResponse {
-  items: Task[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 // ==================== Task Relation Types ====================
-export type TaskRelationType = 'Blocks' | 'RelatesTo' | 'Fixes' | 'Duplicates';
+
+export enum TaskRelationType {
+  Blocks = 'Blocks',
+  RelatesTo = 'RelatesTo',
+  Fixes = 'Fixes',
+  Duplicates = 'Duplicates',
+}
 
 export interface TaskRelation {
   id: string;
@@ -148,6 +148,7 @@ export interface TaskRelation {
   targetTaskId: string;
   relationType: TaskRelationType;
   targetTask?: Task;
+  createdAt: string;
 }
 
 export interface CreateTaskRelationRequest {
@@ -155,57 +156,55 @@ export interface CreateTaskRelationRequest {
   relationType: TaskRelationType;
 }
 
-// ==================== User Types ====================
-export interface User {
-  id: string;
-  userName: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-}
-
 // ==================== Filter & Pagination Types ====================
+
 export interface PaginationParams {
-  page?: number;
-  pageSize?: number;
+  page: number;
+  pageSize: number;
 }
 
-export interface ProjectFilters extends PaginationParams {
-  isActive?: boolean;
+export interface PaginationResponse<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ProjectFilters {
+  isActive?: boolean | null; // null = All
   search?: string;
 }
 
-export interface ModuleFilters extends PaginationParams {
-  status?: 'Active' | 'Archived' | 'All';
+export interface ModuleFilters {
+  isActive?: boolean | null; // null = All
   search?: string;
 }
 
-export interface UseCaseFilters extends PaginationParams {
-  status?: 'Active' | 'Archived' | 'All';
+export interface UseCaseFilters {
+  isActive?: boolean | null; // null = All
   search?: string;
 }
 
-export interface TaskFilters extends PaginationParams {
-  state?: TaskState | 'All';
-  type?: TaskType | 'All';
-  assigneeId?: string;
-  dueDate?: 'Overdue' | 'Today' | 'ThisWeek' | 'ThisMonth' | 'All';
+export interface TaskFilters {
+  state?: TaskState | null; // null = All
+  type?: TaskType | null; // null = All
+  assigneeId?: string | null; // null = All, "me" = current user
+  dueDate?: string | null; // "overdue", "today", "thisWeek", "thisMonth", null = All
   search?: string;
 }
 
-// ==================== Statistics Types ====================
-export interface ProjectStatistics {
-  moduleCount: number;
-  useCaseCount: number;
-  taskCount: number;
-  completedTaskCount: number;
-  taskStatusDistribution: {
-    notStarted: number;
-    inProgress: number;
-    completed: number;
-    cancelled: number;
-  };
-  overdueTasks: Task[];
-  upcomingDeadlines: Task[];
+// ==================== Status Change Types ====================
+
+export interface ChangeStatusRequest {
+  isActive: boolean;
+}
+
+export interface ChangeTaskStateRequest {
+  state: TaskState;
+}
+
+export interface AssignTaskRequest {
+  assigneeId: string;
 }
 

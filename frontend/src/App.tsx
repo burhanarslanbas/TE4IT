@@ -20,56 +20,14 @@ import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ProjectsListPage } from "./pages/ProjectsListPage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
+import { ModuleDetailPage } from "./pages/ModuleDetailPage";
+import { UseCaseDetailPage } from "./pages/UseCaseDetailPage";
+import { TaskDetailPage } from "./pages/TaskDetailPage";
+import { useLanguage } from "./contexts/LanguageContext";
 
-/**
- * Protected Route Bileşeni
- * Kullanıcının authenticated olması gereken sayfalar için
- */
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        // Token kontrolü yap - API'ye istek atmadan
-        if (AuthService.isAuthenticated()) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#9CA3AF]">Yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    toast.error("Giriş yapmalısınız", {
-      description: "Bu sayfaya erişmek için lütfen giriş yapın.",
-      duration: 3000,
-    });
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
 
 /**
  * Ana Layout Bileşeni
@@ -176,10 +134,12 @@ const HomePage = () => {
  * Login Page Handler
  */
 const LoginPageWrapper = () => {
+  const { t } = useLanguage();
+  
   const handleLogin = async () => {
     try {
-      toast.success("Giriş başarılı!", {
-        description: "Profil sayfasına yönlendiriliyorsunuz...",
+      toast.success(t('login.success'), {
+        description: t('login.redirecting'),
         duration: 2000,
       });
       // Redirect with a small delay to show the toast
@@ -340,6 +300,56 @@ export default function App() {
                 <ModuleDetailPage />
               </ProtectedRoute>
             } 
+          />
+          
+          {/* Projects List - Protected Route */}
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <ProjectsListPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Project Detail - Protected Route */}
+          <Route
+            path="/projects/:projectId"
+            element={
+              <ProtectedRoute>
+                <ProjectDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Module Detail - Protected Route */}
+          <Route
+            path="/projects/:projectId/modules/:moduleId"
+            element={
+              <ProtectedRoute>
+                <ModuleDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* UseCase Detail - Protected Route */}
+          <Route
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId"
+            element={
+              <ProtectedRoute>
+                <UseCaseDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Task Detail - Protected Route */}
+          <Route
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId/tasks/:taskId"
+            element={
+              <ProtectedRoute>
+                <TaskDetailPage />
+              </ProtectedRoute>
+            }
           />
           
           {/* 404 - Not Found */}
