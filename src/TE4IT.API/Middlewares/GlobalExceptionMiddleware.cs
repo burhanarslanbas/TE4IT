@@ -90,6 +90,10 @@ public class GlobalExceptionMiddleware
                 _logger.LogWarning(exception, "Unauthorized access attempt");
                 break;
 
+            case ProjectAccessDeniedException:
+                _logger.LogWarning(exception, "Project access denied: {Message}", exception.Message);
+                break;
+
             // BEKLENMEYEN DURUMLAR - Error seviyesinde logla
             default:
                 _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
@@ -210,10 +214,15 @@ public class GlobalExceptionMiddleware
                 new { message = exception.Message }
             ),
 
-            // 4. YETKİ HATALARI (401 Unauthorized)
+            // 4. YETKİ HATALARI
             UnauthorizedAccessException => (
                 HttpStatusCode.Unauthorized,
                 new { message = "Unauthorized access" }
+            ),
+
+            ProjectAccessDeniedException => (
+                HttpStatusCode.Forbidden,
+                new { message = exception.Message }
             ),
 
             // 5. DEFAULT - Bilinmeyen hatalar (500 Internal Server Error)

@@ -66,6 +66,17 @@ export class ApiClient {
   }
 
   /**
+   * URL'yi düzgün birleştir (çift slash sorununu önler)
+   */
+  private joinUrl(base: string, path: string): string {
+    // Base URL'in sonundaki slash'ı temizle
+    const cleanBase = base.replace(/\/+$/, '');
+    // Path'in başındaki slash'ı temizle ve gerekirse ekle
+    const cleanPath = path.replace(/^\/+/, '');
+    return `${cleanBase}/${cleanPath}`;
+  }
+
+  /**
    * API isteği gönder
    */
   async request<T>(
@@ -73,8 +84,8 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      // URL'yi tamamla
-      const url = `${this.baseURL}${endpoint}`;
+      // URL'yi tamamla (çift slash sorununu önle)
+      const url = this.joinUrl(this.baseURL, endpoint);
 
       // Headers'ı hazırla
       const headers: HeadersInit = {
@@ -146,6 +157,16 @@ export class ApiClient {
   async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  /**
+   * PATCH isteği gönder
+   */
+  async patch<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
     });
   }

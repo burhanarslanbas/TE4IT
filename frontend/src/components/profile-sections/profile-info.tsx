@@ -24,7 +24,7 @@ export function ProfileInfo() {
 
   // İlk render'da kullanıcı bilgilerini set et
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && currentUser.id) {
       const initialData = {
         fullName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.userName,
         userName: currentUser.userName || "",
@@ -34,7 +34,7 @@ export function ProfileInfo() {
       setFormData(initialData);
       setOriginalData(initialData);
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Sadece user ID'ye bağlı
 
   // İptal butonuna basıldığında değişiklikleri geri al
   const handleCancel = () => {

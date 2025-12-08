@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using TE4IT.Abstractions.Persistence.Repositories.ProjectMembers;
 using TE4IT.Abstractions.Persistence.Repositories.Projects;
 using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Abstractions.Persistence;
@@ -17,6 +18,7 @@ public class CreateProjectCommandHandlerTests
 {
     private readonly Mock<IProjectWriteRepository> _writeRepositoryMock;
     private readonly Mock<IProjectReadRepository> _readRepositoryMock;
+    private readonly Mock<IProjectMemberWriteRepository> _projectMemberWriteRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly CreateProjectCommandHandler _handler;
 
@@ -24,10 +26,12 @@ public class CreateProjectCommandHandlerTests
     {
         _writeRepositoryMock = new Mock<IProjectWriteRepository>();
         _readRepositoryMock = new Mock<IProjectReadRepository>();
+        _projectMemberWriteRepositoryMock = new Mock<IProjectMemberWriteRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             CurrentUserBuilder.Create().Build());
     }
@@ -43,6 +47,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -72,6 +77,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -96,6 +102,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -126,6 +133,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -154,6 +162,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -182,6 +191,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 
@@ -212,6 +222,7 @@ public class CreateProjectCommandHandlerTests
         var handler = new CreateProjectCommandHandler(
             _writeRepositoryMock.Object,
             _readRepositoryMock.Object,
+            _projectMemberWriteRepositoryMock.Object,
             _unitOfWorkMock.Object,
             currentUser);
 

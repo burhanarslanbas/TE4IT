@@ -2,9 +2,12 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using TE4IT.Abstractions.Persistence.Repositories.Projects;
+using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Projects.Queries.ListProjects;
+using TE4IT.Domain.Services;
 using Project = TE4IT.Domain.Entities.Project;
+using TE4IT.Domain.ValueObjects;
 using TE4IT.Tests.Unit.Common.Builders;
 using Xunit;
 
@@ -13,18 +16,26 @@ namespace TE4IT.Tests.Unit.Application.Features.Projects.Queries.ListProjects;
 public class ListProjectsQueryHandlerTests
 {
     private readonly Mock<IProjectReadRepository> _repositoryMock;
+    private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IUserPermissionService> _userPermissionServiceMock;
     private readonly ListProjectsQueryHandler _handler;
 
     public ListProjectsQueryHandlerTests()
     {
         _repositoryMock = new Mock<IProjectReadRepository>();
-        _handler = new ListProjectsQueryHandler(_repositoryMock.Object);
+        _currentUserMock = new Mock<ICurrentUser>();
+        _userPermissionServiceMock = new Mock<IUserPermissionService>();
+        _handler = new ListProjectsQueryHandler(
+            _repositoryMock.Object,
+            _currentUserMock.Object,
+            _userPermissionServiceMock.Object);
     }
 
     [Fact]
     public async Task Handle_WithValidQuery_ReturnsPagedResult()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var projects = new List<Project>
         {
             ProjectBuilder.Create().WithTitle("Project 1").Build(),
@@ -33,7 +44,10 @@ public class ListProjectsQueryHandlerTests
 
         var pagedResult = new PagedResult<Project>(projects, 2, 1, 20);
         var query = new ListProjectsQuery(1, 20);
-        _repositoryMock.Setup(x => x.ListAsync(1, 20, It.IsAny<CancellationToken>()))
+        _currentUserMock.Setup(x => x.Id).Returns((UserId)userId);
+        _userPermissionServiceMock.Setup(x => x.IsSystemAdministrator(It.IsAny<UserId>()))
+            .Returns(false);
+        _repositoryMock.Setup(x => x.GetByUserAccessAsync(userId, false, 1, 20, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -51,6 +65,7 @@ public class ListProjectsQueryHandlerTests
     public async Task Handle_MapsProjectsToResponsesCorrectly()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var project1 = ProjectBuilder.Create()
             .WithTitle("Project 1")
             .WithIsActive(true)
@@ -63,7 +78,10 @@ public class ListProjectsQueryHandlerTests
         var projects = new List<Project> { project1, project2 };
         var pagedResult = new PagedResult<Project>(projects, 2, 1, 20);
         var query = new ListProjectsQuery(1, 20);
-        _repositoryMock.Setup(x => x.ListAsync(1, 20, It.IsAny<CancellationToken>()))
+        _currentUserMock.Setup(x => x.Id).Returns((UserId)userId);
+        _userPermissionServiceMock.Setup(x => x.IsSystemAdministrator(It.IsAny<UserId>()))
+            .Returns(false);
+        _repositoryMock.Setup(x => x.GetByUserAccessAsync(userId, false, 1, 20, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -81,6 +99,7 @@ public class ListProjectsQueryHandlerTests
     public async Task Handle_WithPagination_ReturnsCorrectPage()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var projects = new List<Project>
         {
             ProjectBuilder.Create().WithTitle("Project 1").Build()
@@ -88,7 +107,10 @@ public class ListProjectsQueryHandlerTests
 
         var pagedResult = new PagedResult<Project>(projects, 25, 2, 10);
         var query = new ListProjectsQuery(2, 10);
-        _repositoryMock.Setup(x => x.ListAsync(2, 10, It.IsAny<CancellationToken>()))
+        _currentUserMock.Setup(x => x.Id).Returns((UserId)userId);
+        _userPermissionServiceMock.Setup(x => x.IsSystemAdministrator(It.IsAny<UserId>()))
+            .Returns(false);
+        _repositoryMock.Setup(x => x.GetByUserAccessAsync(userId, false, 2, 10, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -105,9 +127,13 @@ public class ListProjectsQueryHandlerTests
     public async Task Handle_WithEmptyList_ReturnsEmptyPagedResult()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var pagedResult = new PagedResult<Project>(new List<Project>(), 0, 1, 20);
         var query = new ListProjectsQuery(1, 20);
-        _repositoryMock.Setup(x => x.ListAsync(1, 20, It.IsAny<CancellationToken>()))
+        _currentUserMock.Setup(x => x.Id).Returns((UserId)userId);
+        _userPermissionServiceMock.Setup(x => x.IsSystemAdministrator(It.IsAny<UserId>()))
+            .Returns(false);
+        _repositoryMock.Setup(x => x.GetByUserAccessAsync(userId, false, 1, 20, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act

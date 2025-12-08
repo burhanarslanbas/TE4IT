@@ -11,6 +11,9 @@ public interface IUserAccountService
     
     // Uygulama içi şifre değiştirme
     Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct);
+    
+    // Email ile kullanıcı sorgulama
+    Task<UserInfo?> GetUserByEmailAsync(string email, CancellationToken ct);
 }
 
 

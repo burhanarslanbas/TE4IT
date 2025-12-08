@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using TE4IT.Application.Abstractions.Email;
+using TE4IT.Domain.Enums;
 using TE4IT.Infrastructure.Email.Models;
 
 namespace TE4IT.Infrastructure.Email.Services;
@@ -106,6 +107,26 @@ public sealed class EmailTemplateService : IEmailTemplateService
         {
             { "Email", email },
             { "DateTime", DateTime.Now.ToString("dd.MM.yyyy HH:mm") }
+        });
+    }
+
+    public string GetProjectInvitationTemplate(string projectTitle, string inviterName, ProjectRole role, string acceptLink, DateTime expiresAt)
+    {
+        var template = LoadTemplate("Email", "ProjectInvitation.html");
+        var roleName = role switch
+        {
+            ProjectRole.Member => "Üye (Member)",
+            ProjectRole.Viewer => "Görüntüleyici (Viewer)",
+            _ => role.ToString()
+        };
+
+        return ReplaceVariables(template, new Dictionary<string, object>
+        {
+            { "ProjectTitle", projectTitle },
+            { "InviterName", inviterName },
+            { "Role", roleName },
+            { "AcceptLink", acceptLink },
+            { "ExpiresAt", expiresAt.ToString("dd.MM.yyyy HH:mm") }
         });
     }
 
