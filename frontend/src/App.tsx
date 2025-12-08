@@ -16,6 +16,7 @@ import { ForgotPasswordPage } from "./components/forgot-password-page";
 import { ProjectsListPage } from "./pages/ProjectsListPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ModuleDetailPage } from "./pages/ModuleDetailPage";
+import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
@@ -318,6 +319,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ProjectsListPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create Project - Protected Route */}
+          <Route 
+            path="/projects/new" 
+            element={
+              <ProtectedRoute>
+                <CreateProjectPage />
               </ProtectedRoute>
             } 
           />

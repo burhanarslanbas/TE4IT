@@ -84,6 +84,9 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // Token'ı her request'te yeniden yükle (localStorage güncel olabilir)
+      this.loadToken();
+      
       // URL'yi tamamla (çift slash sorununu önle)
       const url = this.joinUrl(this.baseURL, endpoint);
 

@@ -51,13 +51,23 @@ export class ProjectService {
    * Yeni proje oluştur
    */
   static async createProject(data: CreateProjectRequest): Promise<Project> {
-    const response = await apiClient.post<Project>('/api/v1/projects', data);
-    
-    if (response.success && response.data) {
-      return response.data;
+    try {
+      const response = await apiClient.post<Project>('/api/v1/projects', data);
+      
+      if (response.success && response.data) {
+        return response.data;
+      }
+      
+      // Response başarılı ama data yoksa
+      throw new Error(response.message || 'Proje oluşturulamadı');
+    } catch (error: any) {
+      // ApiError ise mesajını kullan
+      if (error instanceof Error) {
+        throw error;
+      }
+      // Diğer hatalar için genel mesaj
+      throw new Error(error?.message || 'Proje oluşturulamadı. Lütfen tekrar deneyin.');
     }
-    
-    throw new Error('Proje oluşturulamadı');
   }
 
   /**
