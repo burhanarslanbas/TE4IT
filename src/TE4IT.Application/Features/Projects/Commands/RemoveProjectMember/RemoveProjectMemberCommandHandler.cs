@@ -40,13 +40,21 @@ public sealed class RemoveProjectMemberCommandHandler(
         if (member == null)
             throw new ResourceNotFoundException("ProjectMember", request.UserId);
 
-        // Owner (proje sahibi) çıkarılamaz
-        if (member.Role == ProjectRole.Owner)
-            throw new BusinessRuleViolationException("Proje sahibi (Owner) çıkarılamaz.");
-
         // Kullanıcı kendini çıkaramaz
         if (request.UserId == currentUserId.Value)
             throw new BusinessRuleViolationException("Kullanıcı kendini projeden çıkaramaz.");
+
+        // Eğer Owner çıkarılmaya çalışılıyorsa, son Owner kontrolü yap
+        if (member.Role == ProjectRole.Owner)
+        {
+            var ownerCount = await projectMemberReadRepository.CountByProjectIdAndRoleAsync(
+                request.ProjectId, 
+                ProjectRole.Owner, 
+                cancellationToken);
+            
+            if (ownerCount <= 1)
+                throw new BusinessRuleViolationException("Projedeki son Owner çıkarılamaz. En az bir Owner bulunmalıdır.");
+        }
 
         // Domain event ekle ve üyeyi çıkar
         member.Remove();

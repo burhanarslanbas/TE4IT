@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Projects.Commands.AcceptProjectInvitation;
-using TE4IT.Application.Features.Projects.Commands.AddProjectMember;
 using TE4IT.Application.Features.Projects.Commands.CancelProjectInvitation;
 using TE4IT.Application.Features.Projects.Commands.CreateProject;
 using TE4IT.Application.Features.Projects.Commands.InviteProjectMember;
@@ -141,22 +140,6 @@ public class ProjectsController(IMediator mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Projeye üye ekler
-    /// </summary>
-    [HttpPost("{projectId:guid}/members")]
-    [Authorize(Policy = "ProjectUpdate")]
-    [ProducesResponseType(typeof(AddProjectMemberCommandResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddMember(Guid projectId, [FromBody] AddProjectMemberRequest request, CancellationToken ct)
-    {
-        var command = new AddProjectMemberCommand(projectId, request.UserId, request.Role);
-        var result = await mediator.Send(command, ct);
-        return CreatedAtAction(nameof(ListMembers), new { projectId }, result);
-    }
-
-    /// <summary>
     /// Projeden üye çıkarır
     /// </summary>
     [HttpDelete("{projectId:guid}/members/{userId:guid}")]
@@ -283,11 +266,6 @@ public record UpdateProjectRequest(string Title, string? Description);
 /// Proje durum değiştirme request DTO
 /// </summary>
 public record ChangeProjectStatusRequest(bool IsActive);
-
-/// <summary>
-/// Proje üyesi ekleme request DTO
-/// </summary>
-public record AddProjectMemberRequest(Guid UserId, ProjectRole Role);
 
 /// <summary>
 /// Proje üyesi rolü güncelleme request DTO

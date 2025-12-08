@@ -13,6 +13,15 @@ public sealed class UseCaseReadRepository(AppDbContext db)
     public Task<int> CountByModuleAsync(Guid moduleId, CancellationToken cancellationToken = default)
         => Table.CountAsync(uc => uc.ModuleId == moduleId, cancellationToken);
 
+    public async Task<Dictionary<Guid, int>> CountByModuleIdsAsync(List<Guid> moduleIds, CancellationToken cancellationToken = default)
+    {
+        return await Table
+            .Where(uc => moduleIds.Contains(uc.ModuleId))
+            .GroupBy(uc => uc.ModuleId)
+            .Select(g => new { ModuleId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.ModuleId, x => x.Count, cancellationToken);
+    }
+
     public async Task<PagedResult<UseCase>> GetByModuleIdAsync(
         Guid moduleId,
         int page,
