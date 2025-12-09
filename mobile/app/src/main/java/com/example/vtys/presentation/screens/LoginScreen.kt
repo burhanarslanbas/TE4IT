@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vtys.data.local.TokenManager
 import com.example.vtys.data.network.AuthApiService
+import com.example.vtys.data.network.AuthInterceptor
 import com.example.vtys.data.repository.AuthRepositoryImpl
 import com.example.vtys.di.GsonModule
 import com.example.vtys.di.NetworkModule
@@ -37,11 +38,27 @@ fun LoginScreen(
     // Manual wiring (Service Locator style) kept local to screen scope
     val context = androidx.compose.ui.platform.LocalContext.current
     val logging = remember { NetworkModule.provideLoggingInterceptor() }
-    val okHttp = remember { NetworkModule.provideOkHttpClient(logging) }
+    val tokenManager = remember(context) { TokenManager(context) }
+    val authInterceptor = remember(tokenManager) { NetworkModule.provideAuthInterceptor(tokenManager) }
+    
+    // Circular dependency handling for TokenAuthenticator
+    val authApiHolder = remember { 
+        object {
+            var api: AuthApiService? = null
+        }
+    }
+    val authApiProvider: () -> AuthApiService = remember { { authApiHolder.api!! } }
+    
+    val tokenAuthenticator = remember(tokenManager) { NetworkModule.provideTokenAuthenticator(tokenManager, authApiProvider) }
+    val okHttp = remember(logging, authInterceptor, tokenAuthenticator) { NetworkModule.provideOkHttpClient(logging, authInterceptor, tokenAuthenticator) }
     val retrofit = remember { NetworkModule.provideRetrofit(okHttp) }
     val api = remember { NetworkModule.provideAuthApiService(retrofit) }
+    
+    LaunchedEffect(api) {
+        authApiHolder.api = api
+    }
+    
     val gson = remember { GsonModule.provideGson() }
-    val tokenManager = remember(context) { TokenManager(context) }
     val repo = remember { AuthRepositoryImpl(api, tokenManager, gson) }
     val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(repo))
 
@@ -201,4 +218,3 @@ fun LoginScreen(
         }
     }
 }
-

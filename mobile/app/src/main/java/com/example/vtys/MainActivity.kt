@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             VtysTheme {
                 val navController = rememberNavController()
-                NavGraph(navController = navController)
+                NavGraph(navController = navController, context = this)
             }
         }
     }
