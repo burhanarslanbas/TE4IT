@@ -40,10 +40,14 @@ public sealed class ListModulesQueryHandler(
             request.Search,
             cancellationToken);
 
+        // N+1 Query problemi çözümü: Tek sorguda tüm module'lerin UseCase sayılarını al
+        var moduleIds = page.Items.Select(m => m.Id).ToList();
+        var useCaseCounts = await useCaseRepository.CountByModuleIdsAsync(moduleIds, cancellationToken);
+
         var items = new List<ModuleListItemResponse>();
         foreach (var module in page.Items)
         {
-            var useCaseCount = await useCaseRepository.CountByModuleAsync(module.Id, cancellationToken);
+            var useCaseCount = useCaseCounts.TryGetValue(module.Id, out var count) ? count : 0;
             items.Add(new ModuleListItemResponse
             {
                 Id = module.Id,

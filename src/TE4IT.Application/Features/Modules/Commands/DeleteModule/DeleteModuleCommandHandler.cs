@@ -1,6 +1,7 @@
 using MediatR;
 using TE4IT.Abstractions.Persistence.Repositories.Modules;
 using TE4IT.Abstractions.Persistence.Repositories.Projects;
+using TE4IT.Abstractions.Persistence.Repositories.UseCases;
 using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Abstractions.Persistence;
 using TE4IT.Domain.Exceptions.Common;
@@ -13,6 +14,7 @@ namespace TE4IT.Application.Features.Modules.Commands.DeleteModule;
 public sealed class DeleteModuleCommandHandler(
     IModuleReadRepository readRepository,
     IModuleWriteRepository writeRepository,
+    IUseCaseReadRepository useCaseRepository,
     IProjectReadRepository projectReadRepository,
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser,
@@ -33,6 +35,15 @@ public sealed class DeleteModuleCommandHandler(
         // Erişim kontrolü: Kullanıcının projeyi düzenleme yetkisi var mı?
         if (!userPermissionService.CanEditProject(currentUserId, project))
             throw new ProjectAccessDeniedException(module.ProjectId, currentUserId.Value, "Projede modül silme yetkiniz bulunmamaktadır.");
+
+        // UseCase kontrolü: İçinde UseCase varsa uyarı ver
+        var useCaseCount = await useCaseRepository.CountByModuleAsync(module.Id, cancellationToken);
+        if (useCaseCount > 0)
+        {
+            throw new BusinessRuleViolationException(
+                $"Modül içinde {useCaseCount} adet UseCase bulunmaktadır. " +
+                "Modül silindiğinde tüm UseCase'ler de silinecektir.");
+        }
 
         writeRepository.Remove(module, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

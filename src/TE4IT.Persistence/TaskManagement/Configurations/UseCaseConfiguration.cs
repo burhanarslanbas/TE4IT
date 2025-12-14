@@ -20,7 +20,7 @@ public sealed class UseCaseConfiguration : IEntityTypeConfiguration<UseCase>
         b.HasOne<Module>()
             .WithMany()
             .HasForeignKey(u => u.ModuleId)
-            .OnDelete(DeleteBehavior.Restrict)
+            .OnDelete(DeleteBehavior.Cascade)
             .IsRequired();
 
         // FK: UseCase.CreatorId -> AspNetUsers.Id

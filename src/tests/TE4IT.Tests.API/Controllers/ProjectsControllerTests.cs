@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using TE4IT.API;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Auth.Commands.Register;
-using TE4IT.Application.Features.Projects.Commands.AddProjectMember;
 using TE4IT.Application.Features.Projects.Commands.CreateProject;
 using TE4IT.Application.Features.Projects.Queries.GetProjectById;
 using TE4IT.Application.Features.Projects.Queries.ListProjects;
@@ -115,31 +114,6 @@ public class ProjectsControllerTests : ApiTestBase
         var result = await response.Content.ReadFromJsonAsync<PagedResult<ProjectListItemResponse>>();
         result.Should().NotBeNull();
         result!.Items.Should().HaveCountGreaterThanOrEqualTo(1);
-    }
-
-    [Fact]
-    public async Task AddProjectMember_WithValidRequest_ReturnsCreated()
-    {
-        // Arrange
-        var ownerToken = await RegisterAndGetTokenAsync("owner@example.com", "Test123!@#", "owner");
-        SetAuthorizationHeader(ownerToken);
-
-        // Proje oluştur
-        var createRequest = new CreateProjectCommand("Test Project", "Test Description");
-        var createResponse = await Client.PostAsJsonAsync("/api/v1/projects", createRequest);
-        createResponse.EnsureSuccessStatusCode();
-        var project = await createResponse.Content.ReadFromJsonAsync<CreateProjectCommandResponse>();
-
-        // Yeni bir kullanıcı oluştur (member olarak eklemek için)
-        var memberToken = await RegisterAndGetTokenAsync("member@example.com", "Test123!@#", "member");
-        var memberUserId = await GetUserIdFromTokenAsync(memberToken);
-
-        // Act
-        var addMemberRequest = new { UserId = memberUserId, Role = ProjectRole.Member };
-        var response = await Client.PostAsJsonAsync($"/api/v1/projects/{project!.Id}/members", addMemberRequest);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]

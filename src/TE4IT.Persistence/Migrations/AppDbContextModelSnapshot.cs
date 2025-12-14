@@ -732,7 +732,7 @@ namespace TE4IT.Persistence.Migrations
                     b.HasOne("TE4IT.Domain.Entities.Module", null)
                         .WithMany()
                         .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
