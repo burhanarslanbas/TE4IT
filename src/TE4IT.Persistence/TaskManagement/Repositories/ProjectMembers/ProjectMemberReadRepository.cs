@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TE4IT.Abstractions.Persistence.Repositories.ProjectMembers;
 using TE4IT.Domain.Entities;
+using TE4IT.Domain.Enums;
 using TE4IT.Domain.ValueObjects;
 using TE4IT.Persistence.Common.Contexts;
 using TE4IT.Persistence.Common.Repositories.Base;
@@ -41,6 +42,11 @@ public sealed class ProjectMemberReadRepository(AppDbContext db)
     public Task<int> CountByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
         return Table.CountAsync(pm => pm.ProjectId == projectId, cancellationToken);
+    }
+
+    public Task<int> CountByProjectIdAndRoleAsync(Guid projectId, ProjectRole role, CancellationToken cancellationToken = default)
+    {
+        return Table.CountAsync(pm => pm.ProjectId == projectId && pm.Role == role, cancellationToken);
     }
 }
 

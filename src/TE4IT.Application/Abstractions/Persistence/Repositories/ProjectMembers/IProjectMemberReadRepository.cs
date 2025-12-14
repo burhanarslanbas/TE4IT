@@ -1,4 +1,5 @@
 using TE4IT.Application.Abstractions.Persistence.Repositories.Base;
+using TE4IT.Domain.Enums;
 
 namespace TE4IT.Abstractions.Persistence.Repositories.ProjectMembers;
 
@@ -9,5 +10,6 @@ public interface IProjectMemberReadRepository : IReadRepository<Domain.Entities.
     Task<List<Guid>> GetProjectIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<Domain.Entities.ProjectMember?> GetByProjectIdAndUserIdAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
     Task<int> CountByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
+    Task<int> CountByProjectIdAndRoleAsync(Guid projectId, ProjectRole role, CancellationToken cancellationToken = default);
 }
 

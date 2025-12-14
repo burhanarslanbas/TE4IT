@@ -4,5 +4,6 @@ namespace TE4IT.Abstractions.Persistence.Repositories.UseCases;
 
 public interface IUseCaseWriteRepository : IWriteRepository<Domain.Entities.UseCase>
 {
+    System.Threading.Tasks.Task ArchiveByModuleIdAsync(Guid moduleId, CancellationToken cancellationToken = default);
 }
 
