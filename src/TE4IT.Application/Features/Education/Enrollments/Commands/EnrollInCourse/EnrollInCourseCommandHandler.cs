@@ -42,9 +42,7 @@ public sealed class EnrollInCourseCommandHandler(
         }
 
         var enrollment = new Enrollment(currentUserId.Value, request.CourseId);
-        
-        // Domain event fırlat
-        enrollment.AddDomainEvent(new EnrollmentCreatedEvent(enrollment.Id, currentUserId.Value, request.CourseId));
+        // EnrollmentCreatedEvent constructor'da otomatik fırlatılıyor
 
         await enrollmentWriteRepository.AddAsync(enrollment, cancellationToken);
 

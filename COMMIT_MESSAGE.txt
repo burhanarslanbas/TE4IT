@@ -1,39 +1,52 @@
 feat(education): complete Education module implementation and fixes
 
-- Add domain event firing for Course, Enrollment, Content, and Course completion
+- Add domain event firing in entity constructors and methods
 - Implement VideoUrlService for video embed URL generation and platform detection
 - Complete progress calculation in GetCourseByIdQueryHandler
 - Fix Enrollment lifecycle management (StartedAt and CompletedAt)
 - Add EnrollmentCount calculation to course responses
 - Add Platform field to ContentResponse for video content
-- Make AddDomainEvent public in AggregateRoot for handler access
+- Fix Swagger schema ID conflicts for StepDto and ContentDto
+- Make MongoDB connection optional with graceful error handling
+- Update port configuration to 5000
 
 BREAKING CHANGES: None
 
 Fixes:
-- CourseCreatedEvent now fires when course is created
-- EnrollmentCreatedEvent now fires when user enrolls in course
-- ContentCompletedEvent now fires when content is completed
-- CourseCompletedEvent now fires when course is completed
+- CourseCreatedEvent now fires in Course constructor
+- EnrollmentCreatedEvent now fires in Enrollment constructor
+- ContentCompletedEvent now fires in Progress.MarkCompleted()
+- CourseCompletedEvent now fires in Enrollment.MarkCompleted()
 - Enrollment.StartedAt is now set on first content access
 - Enrollment.CompletedAt is now set when course is completed
 - Progress percentage is now calculated correctly
 - Video content now includes embedUrl and platform information
+- Swagger schema ID conflicts resolved (CreateRoadmap.StepDto vs UpdateRoadmap.StepDto)
+- MongoDB connection failures no longer prevent application startup
+- Port changed from 5001 to 5000
 
 New Features:
 - VideoUrlService implementation (YouTube and Vimeo support)
 - GetEnrollmentCountByCourseAsync repository method
 - Platform field in ContentResponse
+- Custom Swagger schema ID generator to prevent conflicts
+- MongoDB connection error handling with fallback
+
+Infrastructure:
+- MongoDB connection timeout handling (10 seconds)
+- MongoDB index initialization with connection validation
+- Application continues to run even if MongoDB is unavailable
+- Port configuration updated to 5000 in all relevant files
 
 Files Changed:
-- AggregateRoot: Made AddDomainEvent public
-- CreateCourseCommandHandler: Added CourseCreatedEvent
-- EnrollInCourseCommandHandler: Added EnrollmentCreatedEvent
-- CompleteContentCommandHandler: Added ContentCompletedEvent, CourseCompletedEvent, Enrollment lifecycle management
-- GetCourseByIdQueryHandler: Added progress calculation, video URL service integration, enrollment count
-- VideoUrlService: New service implementation
-- ServiceRegistration: Registered IVideoUrlService
-- IEnrollmentReadRepository: Added GetEnrollmentCountByCourseAsync
-- EnrollmentReadRepository: Implemented GetEnrollmentCountByCourseAsync
-- ContentResponse: Added Platform field
-
+- Course: Added CourseCreatedEvent in constructor
+- Enrollment: Added EnrollmentCreatedEvent in constructor and CourseCompletedEvent in MarkCompleted()
+- Progress: Added ContentCompletedEvent in MarkCompleted()
+- CreateCourseCommandHandler: Removed manual event firing (now in entity)
+- EnrollInCourseCommandHandler: Removed manual event firing (now in entity)
+- CompleteContentCommandHandler: Removed manual event firing, added Enrollment lifecycle management
+- SwaggerRegistration: Added custom schema ID generator, updated port to 5000
+- EducationMongoRegistration: Added error handling and timeout configuration
+- EducationIndexInitializer: Added connection validation before index creation
+- launchSettings.json: Updated port to 5000
+- appsettings.Development.json: Updated JWT Issuer to port 5000

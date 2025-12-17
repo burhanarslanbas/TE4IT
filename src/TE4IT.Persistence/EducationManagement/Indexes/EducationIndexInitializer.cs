@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using TE4IT.Domain.Entities.Education;
 
@@ -11,51 +12,45 @@ namespace TE4IT.Persistence.EducationManagement.Indexes;
 public sealed class EducationIndexInitializer : IHostedService
 {
     private readonly IMongoDatabase database;
+    private readonly ILogger<EducationIndexInitializer>? logger;
 
-    public EducationIndexInitializer(IMongoDatabase database)
+    public EducationIndexInitializer(IMongoDatabase database, ILogger<EducationIndexInitializer>? logger = null)
     {
         this.database = database;
+        this.logger = logger;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // #region agent log
-        var workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var logPath = Path.Combine(workspaceRoot, ".cursor", "debug.log");
-        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-        File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:21\",\"message\":\"Index initialization started\",\"data\":{{\"databaseName\":\"{database.DatabaseNamespace.DatabaseName}\"}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-        // #endregion
-        
+        // MongoDB bağlantısını test et - bağlantı yoksa index oluşturma
         try
         {
-            // #region agent log
-            File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:28\",\"message\":\"Before CreateCoursesIndexesAsync\",\"data\":{{}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
+            // MongoDB bağlantısını test et (timeout ile)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await database.Client.ListDatabaseNamesAsync(cts.Token);
+            
+            logger?.LogInformation("MongoDB connection successful. Creating indexes for Education module...");
             
             await CreateCoursesIndexesAsync(cancellationToken);
-            
-            // #region agent log
-            File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:33\",\"message\":\"After CreateCoursesIndexesAsync - before CreateEnrollmentsIndexesAsync\",\"data\":{{}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
-            
             await CreateEnrollmentsIndexesAsync(cancellationToken);
-            
-            // #region agent log
-            File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:38\",\"message\":\"After CreateEnrollmentsIndexesAsync - before CreateProgressIndexesAsync\",\"data\":{{}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
-            
             await CreateProgressIndexesAsync(cancellationToken);
             
-            // #region agent log
-            File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:43\",\"message\":\"All indexes created successfully\",\"data\":{{}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
+            logger?.LogInformation("MongoDB indexes for Education module created successfully");
+        }
+        catch (OperationCanceledException)
+        {
+            logger?.LogWarning(
+                "MongoDB connection timeout. Education module indexes will be created on first use. " +
+                "Please check your MongoDB connection string and network connectivity.");
         }
         catch (Exception ex)
         {
-            // #region agent log
-            File.AppendAllText(logPath, $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"EducationIndexInitializer.cs:47\",\"message\":\"Index creation failed\",\"data\":{{\"exceptionType\":\"{ex.GetType().Name}\",\"message\":\"{ex.Message.Replace("\"", "\\\"")}\",\"stackTrace\":\"{ex.StackTrace?.Replace("\"", "\\\"").Replace("\n", "\\n").Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0)) ?? "null"}\"}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
-            throw;
+            // Index oluşturma hatası uygulamanın başlamasını engellemez
+            // Sadece log'la ve devam et
+            logger?.LogError(ex, 
+                "Failed to create MongoDB indexes for Education module. " +
+                "Indexes will be created on first use. Error: {Message}", 
+                ex.Message);
         }
     }
 

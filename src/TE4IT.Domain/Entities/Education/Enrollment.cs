@@ -1,4 +1,5 @@
 using TE4IT.Domain.Entities.Common;
+using TE4IT.Domain.Events;
 
 namespace TE4IT.Domain.Entities.Education;
 
@@ -17,6 +18,9 @@ public sealed class Enrollment : AggregateRoot
         CourseId = courseId;
         EnrolledAt = DateTime.UtcNow;
         IsActive = true;
+        
+        // Domain event fırlat
+        AddDomainEvent(new EnrollmentCreatedEvent(Id, userId, courseId));
     }
 
     public Guid UserId { get; private set; }
@@ -40,6 +44,9 @@ public sealed class Enrollment : AggregateRoot
         CompletedAt = DateTime.UtcNow;
         IsActive = false;
         UpdatedDate = CompletedAt;
+        
+        // Domain event fırlat
+        AddDomainEvent(new CourseCompletedEvent(Id, UserId, CourseId));
     }
 
     public void Deactivate()

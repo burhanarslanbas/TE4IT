@@ -1,4 +1,5 @@
 using TE4IT.Domain.Entities.Common;
+using TE4IT.Domain.Events;
 
 namespace TE4IT.Domain.Entities.Education;
 
@@ -18,6 +19,9 @@ public sealed class Course : AggregateRoot
         ThumbnailUrl = thumbnailUrl;
         CreatedBy = createdBy;
         IsActive = true;
+        
+        // Domain event fırlat
+        AddDomainEvent(new CourseCreatedEvent(Id, createdBy, title));
     }
 
     public string Title { get; private set; } = default!;

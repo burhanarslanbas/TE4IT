@@ -25,9 +25,7 @@ public sealed class CreateCourseCommandHandler(
         }
 
         var course = new Course(request.Title, request.Description, creatorId.Value, request.ThumbnailUrl);
-        
-        // Domain event fırlat
-        course.AddDomainEvent(new CourseCreatedEvent(course.Id, creatorId.Value, course.Title));
+        // CourseCreatedEvent constructor'da otomatik fırlatılıyor
 
         await courseRepository.AddAsync(course, cancellationToken);
 

@@ -1,4 +1,5 @@
 using TE4IT.Domain.Entities.Common;
+using TE4IT.Domain.Events;
 
 namespace TE4IT.Domain.Entities.Education;
 
@@ -50,6 +51,9 @@ public sealed class Progress : AggregateRoot
         TimeSpentMinutes = timeSpentMinutes;
         WatchedPercentage = watchedPercentage ?? WatchedPercentage;
         UpdatedDate = CompletedAt;
+        
+        // Domain event fırlat
+        AddDomainEvent(new ContentCompletedEvent(Id, UserId, ContentId));
     }
 }
 

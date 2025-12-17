@@ -31,7 +31,7 @@ public static class SwaggerRegistration
             {
                 c.AddServer(new OpenApiServer
                 {
-                    Url = "https://localhost:5001",
+                    Url = "https://localhost:5000",
                     Description = "Local Development Server"
                 });
             }
@@ -66,6 +66,28 @@ public static class SwaggerRegistration
                     },
                     Array.Empty<string>()
                 }
+            });
+            
+            // Custom schema ID generator - namespace'i de içererek çakışmaları önle
+            c.CustomSchemaIds(type => 
+            {
+                // Namespace'i schema ID'ye dahil et
+                var fullName = type.FullName ?? type.Name;
+                // Generic type'lar için özel işleme
+                if (type.IsGenericType)
+                {
+                    var genericArgs = string.Join("", type.GetGenericArguments().Select(t => t.Name));
+                    return $"{type.Name}{genericArgs}";
+                }
+                // Namespace'den son kısım (ör: CreateRoadmap.StepDto -> CreateRoadmapStepDto)
+                var parts = fullName.Split('.');
+                if (parts.Length >= 2)
+                {
+                    // Son iki kısmı birleştir (ör: Commands.CreateRoadmap.StepDto -> CreateRoadmapStepDto)
+                    var lastTwo = parts.TakeLast(2);
+                    return string.Join("", lastTwo);
+                }
+                return type.Name;
             });
         });
         return services;

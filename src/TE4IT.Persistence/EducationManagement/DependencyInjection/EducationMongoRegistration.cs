@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Courses;
@@ -26,49 +27,49 @@ public static class EducationMongoRegistration
         services.AddSingleton<IMongoClient>(sp =>
         {
             var opts = sp.GetRequiredService<IOptions<MongoOptions>>().Value;
+            var loggerFactory = sp.GetService<ILoggerFactory>();
+            var logger = loggerFactory?.CreateLogger("EducationMongoRegistration");
 
-            // #region agent log
-            try
+            // Connection string kontrolü
+            if (string.IsNullOrWhiteSpace(opts.ConnectionString))
             {
-                var workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-                var logPath = Path.Combine(workspaceRoot, ".cursor", "debug.log");
-                Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-
-                var hasConnectionString = !string.IsNullOrWhiteSpace(opts.ConnectionString);
-                var isSrvFormat = hasConnectionString && opts.ConnectionString.StartsWith("mongodb+srv://", StringComparison.OrdinalIgnoreCase);
-
-                var logLine = $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"EducationMongoRegistration.cs:28\",\"message\":\"Creating MongoClient\",\"data\":{{\"hasConnectionString\":{hasConnectionString.ToString().ToLower()},\"isSrvFormat\":{isSrvFormat.ToString().ToLower()},\"connectionStringLength\":{opts.ConnectionString?.Length ?? 0}}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}{Environment.NewLine}";
-                File.AppendAllText(logPath, logLine);
+                logger?.LogWarning("MongoDB connection string is empty. Education module will not be available.");
+                // Boş connection string ile MongoClient oluştur (lazy connection)
+                return new MongoClient("mongodb://localhost:27017");
             }
-            catch
-            {
-                // Debug log yazılamazsa uygulamayı bozma
-            }
-            // #endregion
 
             try
             {
-                return new MongoClient(opts.ConnectionString);
+                // MongoClientSettings kullanarak DNS çözümlemesini daha güvenli hale getir
+                var settings = MongoClientSettings.FromConnectionString(opts.ConnectionString);
+                
+                // Connection timeout ayarla (varsayılan 30 saniye)
+                settings.ConnectTimeout = TimeSpan.FromSeconds(10);
+                settings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+                
+                // DNS çözümleme hatası durumunda uygulamanın başlamasına izin ver
+                settings.SocketTimeout = TimeSpan.FromSeconds(10);
+                
+                var client = new MongoClient(settings);
+                logger?.LogInformation("MongoDB client created successfully");
+                return client;
             }
             catch (Exception ex)
             {
-                // #region agent log
-                try
+                logger?.LogError(ex, 
+                    "Failed to create MongoDB client. Education module will not be available. " +
+                    "Error: {Message}. The application will continue to run but Education endpoints may not work.", 
+                    ex.Message);
+                
+                // Hata durumunda fallback olarak localhost kullan (uygulama çalışmaya devam eder)
+                // Not: Bu durumda Education endpoint'leri çalışmayacak ama uygulama başlayacak
+                var fallbackSettings = new MongoClientSettings
                 {
-                    var workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-                    var logPath = Path.Combine(workspaceRoot, ".cursor", "debug.log");
-                    Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-
-                    var logLine = $"{{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"B\",\"location\":\"EducationMongoRegistration.cs:48\",\"message\":\"MongoClient creation failed\",\"data\":{{\"exceptionType\":\"{ex.GetType().Name}\",\"message\":\"{ex.Message.Replace("\"", "\\\"")}\"}},\"timestamp\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}{Environment.NewLine}";
-                    File.AppendAllText(logPath, logLine);
-                }
-                catch
-                {
-                    // Debug log yazılamazsa uygulamayı bozma
-                }
-                // #endregion
-
-                throw;
+                    Server = new MongoServerAddress("localhost", 27017),
+                    ConnectTimeout = TimeSpan.FromSeconds(5),
+                    ServerSelectionTimeout = TimeSpan.FromSeconds(5)
+                };
+                return new MongoClient(fallbackSettings);
             }
         });
 

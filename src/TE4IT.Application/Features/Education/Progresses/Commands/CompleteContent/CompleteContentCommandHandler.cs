@@ -90,7 +90,7 @@ public sealed class CompleteContentCommandHandler(
         {
             progress = existingProgress;
             progress.MarkCompleted(request.TimeSpentMinutes, request.WatchedPercentage);
-            progress.AddDomainEvent(new ContentCompletedEvent(progress.Id, currentUserId.Value, request.ContentId));
+            // ContentCompletedEvent MarkCompleted() metodunda otomatik fırlatılıyor
             progressWriteRepository.Update(progress);
         }
         else
@@ -103,7 +103,7 @@ public sealed class CompleteContentCommandHandler(
                 request.ContentId);
 
             progress.MarkCompleted(request.TimeSpentMinutes, request.WatchedPercentage);
-            progress.AddDomainEvent(new ContentCompletedEvent(progress.Id, currentUserId.Value, request.ContentId));
+            // ContentCompletedEvent MarkCompleted() metodunda otomatik fırlatılıyor
             await progressWriteRepository.AddAsync(progress, cancellationToken);
         }
 
@@ -122,11 +122,11 @@ public sealed class CompleteContentCommandHandler(
                 request.CourseId,
                 cancellationToken);
             
-            // Kurs tamamlandığında Enrollment.CompletedAt set et ve event fırlat
+            // Kurs tamamlandığında Enrollment.CompletedAt set et
+            // CourseCompletedEvent MarkCompleted() metodunda otomatik fırlatılıyor
             if (isCourseCompleted)
             {
                 enrollment.MarkCompleted();
-                enrollment.AddDomainEvent(new CourseCompletedEvent(enrollment.Id, currentUserId.Value, request.CourseId));
                 enrollmentWriteRepository.Update(enrollment);
             }
         }
