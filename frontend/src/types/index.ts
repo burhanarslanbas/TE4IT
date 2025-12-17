@@ -182,7 +182,9 @@ export interface ModuleFilters {
 }
 
 export interface UseCaseFilters {
-  isActive?: boolean | null; // null = All
+  page?: number;
+  pageSize?: number;
+  status?: 'All' | 'Active' | 'Archived';
   search?: string;
 }
 

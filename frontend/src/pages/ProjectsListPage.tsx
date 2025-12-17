@@ -7,13 +7,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectService } from '../services/projectService';
-import type { Project, ProjectFilters } from '../types';
+import type { Project } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Search, Eye, Calendar, Archive, Filter } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { ApiError } from '../services/api';
 
 export function ProjectsListPage() {
   const navigate = useNavigate();
@@ -21,28 +23,27 @@ export function ProjectsListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<boolean | null>(null);
+  const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     loadProjects();
-  }, [filters]);
+  }, [page, statusFilter, searchTerm]);
 
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const response = await projectService.list({
+      const response = await ProjectService.getProjects({
         page,
         pageSize,
         isActive: statusFilter,
         search: searchTerm || undefined,
       });
 
-      if (response.success && response.data) {
-        setProjects(response.data.items);
-        setTotalPages(response.data.totalPages);
-      }
+      setProjects(response.items);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Error loading projects:', error);
       if (error instanceof ApiError) {
@@ -59,17 +60,14 @@ export function ProjectsListPage() {
     }
   };
 
-
   const handleSearch = (value: string) => {
-    setFilters({ ...filters, search: value, page: 1 });
+    setSearchTerm(value);
+    setPage(1);
   };
 
   const handleFilterChange = (value: string) => {
-    setFilters({
-      ...filters,
-      isActive: value === 'all' ? undefined : value === 'active',
-      page: 1,
-    });
+    setStatusFilter(value === 'all' ? undefined : value === 'active');
+    setPage(1);
   };
 
   return (
@@ -162,7 +160,7 @@ export function ProjectsListPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] w-4 h-4 pointer-events-none" />
                 <Input
                   placeholder="Proje ara..."
-                  value={filters.search || ''}
+                  value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="pl-11 pr-4 bg-[#0D1117]/60 backdrop-blur-sm border-[#30363D]/80 text-[#E5E7EB] placeholder:text-[#6B7280] focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6]/30 transition-all h-10 rounded-lg"
                 />
@@ -170,7 +168,7 @@ export function ProjectsListPage() {
 
               {/* Filter Select */}
               <Select
-                value={filters.isActive === undefined ? 'all' : filters.isActive ? 'active' : 'archived'}
+                value={statusFilter === undefined ? 'all' : statusFilter ? 'active' : 'archived'}
                 onValueChange={handleFilterChange}
               >
                 <SelectTrigger className="w-full sm:w-[140px] bg-[#0D1117]/60 backdrop-blur-sm border-[#30363D]/80 text-[#E5E7EB] h-10 rounded-lg">

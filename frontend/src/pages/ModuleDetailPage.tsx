@@ -8,34 +8,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
-  Edit,
   Trash2,
   Archive,
   ArchiveRestore,
   Plus,
   Search,
-  Filter,
   Eye,
-  Folder,
-  Package,
-  FileText,
+  Layers,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import {
   Breadcrumb,
@@ -44,27 +28,20 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from '../components/ui/breadcrumb';
-import { moduleService } from '../services/moduleService';
-import { projectService } from '../services/projectService';
+import { ModuleService } from '../services/moduleService';
+import { ProjectService } from '../services/projectService';
+import { UseCaseService } from '../services/useCaseService';
 import { hasPermission } from '../utils/permissions';
+import { ApiError } from '../services/api';
 import {
   Module,
   Project,
   UseCase,
-  CreateUseCaseRequest,
-  UpdateModuleRequest,
 } from '../types';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Archive, ArchiveRestore, Layers } from 'lucide-react';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../components/ui/breadcrumb';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../components/ui/pagination';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog';
-
-interface EditModuleForm {
-  title: string;
-  description: string;
-}
 
 export function ModuleDetailPage() {
   const { projectId, moduleId } = useParams<{ projectId: string; moduleId: string }>();
@@ -78,10 +55,7 @@ export function ModuleDetailPage() {
   const [statusFilter, setStatusFilter] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
-  const { register: registerModule, handleSubmit: handleSubmitModule, reset: resetModule, formState: { errors: moduleErrors } } = useForm<EditModuleForm>();
 
   useEffect(() => {
     if (projectId && moduleId) {
@@ -94,16 +68,7 @@ export function ModuleDetailPage() {
     if (moduleId) {
       loadUseCases();
     }
-  }, [moduleId, filters]);
-
-  useEffect(() => {
-    if (module) {
-      resetModule({
-        title: module.title,
-        description: module.description || '',
-      });
-    }
-  }, [module, resetModule]);
+  }, [moduleId, page, statusFilter, searchTerm]);
 
   const loadProject = async () => {
     if (!projectId) return;
@@ -121,22 +86,13 @@ export function ModuleDetailPage() {
     if (!moduleId) return;
     try {
       setLoading(true);
-      const [projectResponse, moduleResponse] = await Promise.all([
-        projectService.getById(projectId),
-        moduleService.getById(moduleId),
+      const [projectData, moduleData] = await Promise.all([
+        ProjectService.getProject(projectId!),
+        ModuleService.getModule(moduleId!),
       ]);
 
-      if (projectResponse.success && projectResponse.data) {
-        setProject(projectResponse.data);
-      }
-
-      if (moduleResponse.success && moduleResponse.data) {
-        setModule(moduleResponse.data);
-        setEditFormData({
-          title: moduleResponse.data.title,
-          description: moduleResponse.data.description || '',
-        });
-      }
+      setProject(projectData);
+      setModule(moduleData);
     } catch (error) {
       console.error('Error loading data:', error);
       if (error instanceof ApiError) {
@@ -160,17 +116,15 @@ export function ModuleDetailPage() {
 
     try {
       setUseCasesLoading(true);
-      const response = await moduleService.getUseCases(moduleId, {
+      const response = await UseCaseService.getUseCases(moduleId, {
         page,
-        pageSize,
-        isActive: statusFilter,
+        pageSize: 10,
+        status: statusFilter === null ? 'All' : (statusFilter ? 'Active' : 'Archived'),
         search: searchTerm || undefined,
       });
 
-      if (response.success && response.data) {
-        setUseCases(response.data.items);
-        setTotalPages(response.data.totalPages);
-      }
+      setUseCases(response.items);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Error loading use cases:', error);
       if (error instanceof ApiError) {
@@ -184,23 +138,6 @@ export function ModuleDetailPage() {
       }
     } finally {
       setUseCasesLoading(false);
-    }
-  };
-
-  const handleUpdateModule = async (data: EditModuleForm) => {
-    if (!moduleId) return;
-    try {
-      await ModuleService.updateModule(moduleId, {
-        title: data.title,
-        description: data.description || undefined,
-      });
-      toast.success('Modül güncellendi');
-      setEditDialogOpen(false);
-      loadModule();
-    } catch (error: any) {
-      toast.error('Modül güncellenemedi', {
-        description: error.message || 'Bir hata oluştu',
-      });
     }
   };
 
@@ -254,20 +191,26 @@ export function ModuleDetailPage() {
   };
 
   const handleSearch = (value: string) => {
-    setFilters({ ...filters, search: value, page: 1 });
+    setSearchTerm(value);
+    setPage(1);
   };
 
   const handleFilterChange = (value: string) => {
-    setFilters({
-      ...filters,
-      status: value as 'All' | 'Active' | 'Archived',
-      page: 1,
-    });
+    if (value === 'All') {
+      setStatusFilter(null);
+    } else if (value === 'Active') {
+      setStatusFilter(true);
+    } else {
+      setStatusFilter(false);
+    }
+    setPage(1);
   };
 
-  const canUpdate = hasPermission('ModuleUpdate');
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
   const canDelete = hasPermission('ModuleDelete');
-  const canCreateUseCase = hasPermission('UseCaseCreate');
 
   if (loading) {
     return (
@@ -346,7 +289,7 @@ export function ModuleDetailPage() {
               <h1 className="text-3xl font-bold mb-2">Module: {module.title}</h1>
               <div className="flex items-center gap-3">
                 <Badge
-                  variant={module.isActive ? 'default' : 'secondary'}
+                  variant={module.status === 'Active' ? 'default' : 'secondary'}
                   className={
                     module.status === 'Active'
                       ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white px-3 py-1'
@@ -387,147 +330,94 @@ export function ModuleDetailPage() {
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {useCases.map((useCase, index) => (
-                <motion.div
-                  key={useCase.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 hover:border-[#EC4899]/50 hover:shadow-lg hover:shadow-[#EC4899]/10 transition-all cursor-pointer group"
-                  onClick={() =>
-                    navigate(
-                      `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
-                    )
-                  }
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-[#E5E7EB] group-hover:text-[#EC4899] transition-colors">
-                      {useCase.title}
-                    </h3>
-                    <Badge
-                      variant={useCase.isActive ? 'default' : 'secondary'}
-                      className={
-                        useCase.isActive
-                          ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                          : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
-                      }
-                    >
-                      {useCase.isActive ? 'Active' : 'Archived'}
-                    </Badge>
-                  </div>
-                  {useCase.description && (
-                    <p className="text-[#9CA3AF] text-sm mb-4 line-clamp-2">
-                      {useCase.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div className="text-[#9CA3AF] text-sm">
-                      {useCase.taskCount || 0} Tasks
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-[#EC4899] hover:text-[#EC4899] hover:bg-[#EC4899]/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(
-                          `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
-                        );
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                    <DialogHeader>
-                      <DialogTitle>Edit Module</DialogTitle>
-                      <DialogDescription className="text-[#9CA3AF]">
-                        Update the module information. Changes will be saved immediately.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmitModule(handleUpdateModule)} className="space-y-4">
-                      <div>
-                        <Label htmlFor="edit-module-title">Title *</Label>
-                        <Input
-                          id="edit-module-title"
-                          {...registerModule('title', {
-                            required: 'Title is required',
-                            minLength: { value: 3, message: 'Title must be at least 3 characters' },
-                            maxLength: { value: 100, message: 'Title must be at most 100 characters' },
-                          })}
-                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB]"
-                        />
-                        {moduleErrors.title && (
-                          <p className="text-red-500 text-sm mt-1">{moduleErrors.title.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-module-description">Description</Label>
-                        <Textarea
-                          id="edit-module-description"
-                          {...registerModule('description', {
-                            maxLength: { value: 1000, message: 'Description must be at most 1000 characters' },
-                          })}
-                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[100px]"
-                        />
-                        {moduleErrors.description && (
-                          <p className="text-red-500 text-sm mt-1">{moduleErrors.description.message}</p>
-                        )}
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setEditDialogOpen(false)}
-                          className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
-                          Save
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              )}
-              {hasPermission(PERMISSIONS.MODULE_DELETE) && (
-                <>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Module
-                  </Button>
-                  <ConfirmDeleteDialog
-                    open={deleteDialogOpen}
-                    onOpenChange={setDeleteDialogOpen}
-                    entityType="Module"
-                    entityName={module.title}
-                    onConfirm={handleDeleteModule}
-                    children={module.useCaseCount ? [{ count: module.useCaseCount, type: 'use case' }] : undefined}
-                  />
-                </>
-              )}
-            </div>
           </div>
-
-          {module.description && (
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-[#9CA3AF] mb-2">Description:</h3>
-              <p className="text-[#E5E7EB]">{module.description}</p>
-            </div>
-          )}
         </div>
 
         {/* Use Cases Section */}
-        <div>
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {useCases.map((useCase, index) => (
+              <motion.div
+                key={useCase.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 hover:border-[#EC4899]/50 hover:shadow-lg hover:shadow-[#EC4899]/10 transition-all cursor-pointer group"
+                onClick={() =>
+                  navigate(
+                    `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
+                  )
+                }
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[#E5E7EB] group-hover:text-[#EC4899] transition-colors">
+                    {useCase.title}
+                  </h3>
+                  <Badge
+                    variant={useCase.status === 'Active' ? 'default' : 'secondary'}
+                    className={
+                      useCase.status === 'Active'
+                        ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                        : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
+                    }
+                  >
+                    {useCase.status === 'Active' ? 'Active' : 'Archived'}
+                  </Badge>
+                </div>
+                {useCase.description && (
+                  <p className="text-[#9CA3AF] text-sm mb-4 line-clamp-2">
+                    {useCase.description}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-[#9CA3AF] text-sm">
+                    {useCase.taskCount || 0} Tasks
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#EC4899] hover:text-[#EC4899] hover:bg-[#EC4899]/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
+                      );
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Delete Module Button */}
+        {canDelete && (
+          <div className="mb-6">
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Module
+            </Button>
+            <ConfirmDeleteDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityType="Module"
+              entityName={module.title}
+              onConfirm={handleDeleteModule}
+              children={module.useCaseCount ? [{ count: module.useCaseCount, type: 'use case' }] : undefined}
+            />
+          </div>
+        )}
+
+        {/* Use Cases Section */}
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Use Cases</h2>
             <div className="flex flex-1 gap-4 items-center">
@@ -535,13 +425,13 @@ export function ModuleDetailPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9CA3AF] w-4 h-4" />
                 <Input
                   placeholder="Search use cases..."
-                  value={filters.search || ''}
+                  value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="pl-10 bg-[#161B22] border-[#30363D] text-[#E5E7EB]"
                 />
               </div>
               
-              <Select value={filters.status || 'All'} onValueChange={handleFilterChange}>
+              <Select value={statusFilter === null ? 'All' : (statusFilter ? 'Active' : 'Archived')} onValueChange={handleFilterChange}>
                 <SelectTrigger className="w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
@@ -725,25 +615,25 @@ export function ModuleDetailPage() {
                     <PaginationContent>
                       <PaginationItem>
                         <PaginationPrevious
-                          onClick={() => filters.page && filters.page > 1 && handlePageChange(filters.page - 1)}
-                          className={filters.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          onClick={() => page > 1 && handlePageChange(page - 1)}
+                          className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                         />
                       </PaginationItem>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <PaginationItem key={page}>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                        <PaginationItem key={pageNum}>
                           <PaginationLink
-                            onClick={() => handlePageChange(page)}
-                            isActive={filters.page === page}
+                            onClick={() => handlePageChange(pageNum)}
+                            isActive={page === pageNum}
                             className="cursor-pointer"
                           >
-                            {page}
+                            {pageNum}
                           </PaginationLink>
                         </PaginationItem>
                       ))}
                       <PaginationItem>
                         <PaginationNext
-                          onClick={() => filters.page && filters.page < totalPages && handlePageChange(filters.page + 1)}
-                          className={filters.page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          onClick={() => page < totalPages && handlePageChange(page + 1)}
+                          className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                         />
                       </PaginationItem>
                     </PaginationContent>

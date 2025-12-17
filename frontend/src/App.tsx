@@ -26,14 +26,6 @@ import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { ProjectsListPage } from "./pages/ProjectsListPage";
-import { ProjectDetailPage } from "./pages/ProjectDetailPage";
-import { ModuleDetailPage } from "./pages/ModuleDetailPage";
-import { UseCaseDetailPage } from "./pages/UseCaseDetailPage";
-import { TaskDetailPage } from "./pages/TaskDetailPage";
-import { useLanguage } from "./contexts/LanguageContext";
-
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 /**
@@ -191,12 +183,10 @@ const HomePage = () => {
  * Login Page Handler
  */
 const LoginPageWrapper = () => {
-  const { t } = useLanguage();
-  
   const handleLogin = async () => {
     try {
-      toast.success(t('login.success'), {
-        description: t('login.redirecting'),
+      toast.success("Giriş başarılı!", {
+        description: "Profil sayfasına yönlendiriliyorsunuz...",
         duration: 2000,
       });
       // Redirect with a small delay to show the toast
@@ -390,56 +380,6 @@ export default function App() {
                 <ModuleDetailPage />
               </ProtectedRoute>
             } 
-          />
-          
-          {/* Projects List - Protected Route */}
-          <Route
-            path="/projects"
-            element={
-              <ProtectedRoute>
-                <ProjectsListPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Project Detail - Protected Route */}
-          <Route
-            path="/projects/:projectId"
-            element={
-              <ProtectedRoute>
-                <ProjectDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Module Detail - Protected Route */}
-          <Route
-            path="/projects/:projectId/modules/:moduleId"
-            element={
-              <ProtectedRoute>
-                <ModuleDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* UseCase Detail - Protected Route */}
-          <Route
-            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId"
-            element={
-              <ProtectedRoute>
-                <UseCaseDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Task Detail - Protected Route */}
-          <Route
-            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId/tasks/:taskId"
-            element={
-              <ProtectedRoute>
-                <TaskDetailPage />
-              </ProtectedRoute>
-            }
           />
 
           {/* Create UseCase - Protected Route */}
