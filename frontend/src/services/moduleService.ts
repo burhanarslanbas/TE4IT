@@ -1,13 +1,20 @@
 /**
- * Module API Servisleri
+ * Module Service
+ * Module ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   Module,
   CreateModuleRequest,
   UpdateModuleRequest,
-  ModuleListResponse,
+  PaginationParams,
+  PaginationResponse,
   ModuleFilters,
+  ChangeStatusRequest,
+  UseCase,
+  UseCaseFilters,
+  CreateUseCaseRequest,
 } from '../types';
 
 // Backend response type (isActive boolean olarak geliyor)

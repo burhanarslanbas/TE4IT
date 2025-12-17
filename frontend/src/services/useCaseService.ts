@@ -1,13 +1,20 @@
 /**
- * UseCase API Servisleri
+ * UseCase Service
+ * UseCase ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   UseCase,
   CreateUseCaseRequest,
   UpdateUseCaseRequest,
-  UseCaseListResponse,
+  PaginationParams,
+  PaginationResponse,
   UseCaseFilters,
+  ChangeStatusRequest,
+  Task,
+  TaskFilters,
+  CreateTaskRequest,
 } from '../types';
 
 // Backend response type (isActive boolean olarak geliyor)

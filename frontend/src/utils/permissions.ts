@@ -1,17 +1,17 @@
 /**
- * Permission Helper Fonksiyonları
- * JWT token'dan permission'ları alıp kontrol eder
+ * Permission Utilities
+ * JWT token'dan permission'ları okuma ve kontrol etme fonksiyonları
  */
 
 /**
- * JWT token'dan permission'ları çıkar
+ * JWT token'dan permission'ları al
  */
-function getPermissionsFromToken(): string[] {
+export const getPermissionsFromToken = (): string[] => {
   try {
     const token = localStorage.getItem('te4it_token');
     if (!token) return [];
 
-    // JWT token'ı decode et (basit decode, production'da library kullanılmalı)
+    // JWT token'ı decode et (basit decode, production'da jwt-decode kütüphanesi kullanılabilir)
     const base64Url = token.split('.')[1];
     if (!base64Url) return [];
 
@@ -24,69 +24,34 @@ function getPermissionsFromToken(): string[] {
     );
 
     const decoded = JSON.parse(jsonPayload);
-    return decoded.permission || [];
+    return decoded.permission || decoded.permissions || [];
   } catch (error) {
-    console.error('Token decode hatası:', error);
+    console.error('Error decoding token:', error);
     return [];
   }
-}
+};
 
 /**
- * Kullanıcının belirtilen permission'a sahip olup olmadığını kontrol et
+ * Belirli bir permission'a sahip olup olmadığını kontrol et
  */
-export function hasPermission(permission: string): boolean {
+export const hasPermission = (permission: string): boolean => {
   const permissions = getPermissionsFromToken();
   return permissions.includes(permission);
-}
+};
 
 /**
- * Kullanıcının belirtilen permission'lardan en az birine sahip olup olmadığını kontrol et
+ * Birden fazla permission'dan en az birine sahip olup olmadığını kontrol et
  */
-export function hasAnyPermission(permissions: string[]): boolean {
+export const hasAnyPermission = (permissions: string[]): boolean => {
   const userPermissions = getPermissionsFromToken();
   return permissions.some((perm) => userPermissions.includes(perm));
-}
+};
 
 /**
- * Kullanıcının belirtilen tüm permission'lara sahip olup olmadığını kontrol et
+ * Tüm permission'lara sahip olup olmadığını kontrol et
  */
-export function hasAllPermissions(permissions: string[]): boolean {
+export const hasAllPermissions = (permissions: string[]): boolean => {
   const userPermissions = getPermissionsFromToken();
   return permissions.every((perm) => userPermissions.includes(perm));
-}
-
-/**
- * Permission constant'ları
- */
-export const PERMISSIONS = {
-  // Project permissions
-  PROJECT_CREATE: 'ProjectCreate',
-  PROJECT_READ: 'ProjectRead',
-  PROJECT_UPDATE: 'ProjectUpdate',
-  PROJECT_DELETE: 'ProjectDelete',
-  
-  // Module permissions
-  MODULE_CREATE: 'ModuleCreate',
-  MODULE_READ: 'ModuleRead',
-  MODULE_UPDATE: 'ModuleUpdate',
-  MODULE_DELETE: 'ModuleDelete',
-  
-  // UseCase permissions
-  USECASE_CREATE: 'UseCaseCreate',
-  USECASE_READ: 'UseCaseRead',
-  USECASE_UPDATE: 'UseCaseUpdate',
-  USECASE_DELETE: 'UseCaseDelete',
-  
-  // Task permissions
-  TASK_CREATE: 'TaskCreate',
-  TASK_READ: 'TaskRead',
-  TASK_UPDATE: 'TaskUpdate',
-  TASK_ASSIGN: 'TaskAssign',
-  TASK_STATE_CHANGE: 'TaskStateChange',
-  TASK_DELETE: 'TaskDelete',
-  
-  // TaskRelation permissions
-  TASK_RELATION_CREATE: 'TaskRelationCreate',
-  TASK_RELATION_DELETE: 'TaskRelationDelete',
-} as const;
+};
 

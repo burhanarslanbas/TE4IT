@@ -1,0 +1,164 @@
+# .NET Build Artifacts
+**/bin/
+**/obj/
+**/[Bb]in/
+**/[Oo]bj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.dll.config
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+
+# Build Results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+**/packages/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.nuget/
+
+# Environment Files
+ai-service/.env
+*.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# App Settings (Development/Production - keep base appsettings.json)
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.*.json
+!**/appsettings.json
+
+# Database Files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+# Logs
+*.log
+logs/
+*.log.*
+**/logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+*.bak
+
+# Docker
+.dockerignore
+
+# Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+*.coverage
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*~
+*.bak
+*.orig
+
+# Python (for ai-service)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js (for frontend - if not already in frontend/.gitignore)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Android (for mobile - if not already in mobile/.gitignore)
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+local.properties
+.gradle/
+build/
+captures/
+.externalNativeBuild
+.cxx/
+
+# Cursor IDE
+.cursor/
+
+# Azure
+.azure/
+
+# Miscellaneous
+*.cache
+*.tmp
+*.temp

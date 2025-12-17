@@ -1,13 +1,20 @@
 /**
- * Project API Servisleri
+ * Project Service
+ * Project ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   Project,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectListResponse,
+  PaginationParams,
+  PaginationResponse,
   ProjectFilters,
+  ChangeStatusRequest,
+  Module,
+  ModuleFilters,
+  CreateModuleRequest,
 } from '../types';
 
 // Backend response type (IsActive boolean olarak geliyor)

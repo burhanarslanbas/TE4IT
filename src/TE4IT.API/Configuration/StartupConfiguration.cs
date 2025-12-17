@@ -27,6 +27,13 @@ public static class StartupConfiguration
     {
         try
         {
+            // Test ortamında warm-up'ı atla (In-Memory DB zaten hazır)
+            var environment = app.Environment.EnvironmentName;
+            if (environment == "Testing")
+            {
+                return;
+            }
+
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             

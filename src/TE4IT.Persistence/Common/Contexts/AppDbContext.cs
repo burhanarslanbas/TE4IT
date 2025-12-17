@@ -15,6 +15,7 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<Module> Modules => Set<Module>();
     public DbSet<UseCase> UseCases => Set<UseCase>();
     public DbSet<DomainTask> Tasks => Set<DomainTask>();

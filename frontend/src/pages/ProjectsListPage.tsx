@@ -2,7 +2,8 @@
  * Projects List Page - Modern Glassmorphism Design
  * Route: /projects
  */
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectService } from '../services/projectService';
@@ -16,14 +17,12 @@ import { Plus, Search, Eye, Calendar, Archive, Filter } from 'lucide-react';
 
 export function ProjectsListPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<ProjectFilters>({
-    page: 1,
-    pageSize: 20,
-    isActive: undefined,
-    search: '',
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<boolean | null>(null);
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
@@ -33,13 +32,28 @@ export function ProjectsListPage() {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const response = await ProjectService.getProjects(filters);
-      setProjects(response.items);
-      setTotalPages(response.totalPages);
-    } catch (error: any) {
-      toast.error('Projeler yüklenemedi', {
-        description: error.message || 'Bir hata oluştu',
+      const response = await projectService.list({
+        page,
+        pageSize,
+        isActive: statusFilter,
+        search: searchTerm || undefined,
       });
+
+      if (response.success && response.data) {
+        setProjects(response.data.items);
+        setTotalPages(response.data.totalPages);
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      if (error instanceof ApiError) {
+        toast.error(t('common.error'), {
+          description: error.message || t('projects.loadError'),
+        });
+      } else {
+        toast.error(t('common.error'), {
+          description: t('projects.loadError'),
+        });
+      }
     } finally {
       setLoading(false);
     }

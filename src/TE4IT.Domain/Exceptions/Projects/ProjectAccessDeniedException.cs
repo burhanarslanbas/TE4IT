@@ -17,6 +17,13 @@ public class ProjectAccessDeniedException : DomainException
         UserId = userId;
     }
 
+    public ProjectAccessDeniedException(Guid projectId, Guid userId, string message)
+        : base(message)
+    {
+        ProjectId = projectId;
+        UserId = userId;
+    }
+
     public ProjectAccessDeniedException(string message) : base(message)
     {
     }

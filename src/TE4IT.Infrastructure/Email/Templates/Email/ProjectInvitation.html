@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proje Daveti</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .content p {
+            margin: 0 0 15px;
+            font-size: 16px;
+        }
+        .highlight {
+            background-color: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .highlight strong {
+            color: #667eea;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .info {
+            background-color: #fff9e6;
+            border: 1px solid #ffe066;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+            border-top: 1px solid #e0e0e0;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Proje Daveti</h1>
+        </div>
+        <div class="content">
+            <p>Merhaba,</p>
+            <p><strong>{{InviterName}}</strong> tarafından <strong>{{ProjectTitle}}</strong> projesine davet edildiniz!</p>
+            
+            <div class="highlight">
+                <p><strong>Rol:</strong> {{Role}}</p>
+                <p><strong>Proje:</strong> {{ProjectTitle}}</p>
+            </div>
+
+            <p>Bu daveti kabul ederek projeye katılabilir ve ekiple birlikte çalışmaya başlayabilirsiniz.</p>
+
+            <div class="button-container">
+                <a href="{{AcceptLink}}" class="button">Daveti Kabul Et</a>
+            </div>
+
+            <div class="info">
+                <strong>ℹ️ Önemli Bilgi:</strong><br>
+                Bu davet linki <strong>{{ExpiresAt}}</strong> tarihine kadar geçerlidir. Bu tarihten sonra linkin süresi dolacaktır.
+            </div>
+
+            <p>Eğer bu daveti siz talep etmediyseniz, bu e-postayı görmezden gelebilirsiniz.</p>
+        </div>
+        <div class="footer">
+            <p>© 2024 TE4IT Platform. Tüm hakları saklıdır.</p>
+            <p>Bu e-posta <a href="#">TE4IT</a> tarafından gönderilmiştir.</p>
+        </div>
+    </div>
+</body>
+</html>
+
