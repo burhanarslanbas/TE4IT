@@ -3,7 +3,9 @@
  * Login, Register ve kullanıcı yönetimi için API servisleri
  */
 
-import { apiClient, ApiResponse, ApiError } from './api';
+import { apiClient, ApiResponse } from './api';
+import { ApiError } from '../core/errors/ApiError';
+import { saveToken, saveRefreshToken, clearTokens, getToken, getRefreshToken } from '../utils/tokenManager';
 
 // Re-export ApiError for convenience
 export { ApiError };
@@ -111,9 +113,10 @@ export class AuthService {
       );
 
       if (response.success && response.data) {
-        // Token'ları kaydet
-        apiClient.setToken(response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+        // Token'ları güvenli şekilde kaydet (sessionStorage)
+        saveToken(response.data.accessToken, response.data.expiresAt);
+        saveRefreshToken(response.data.refreshToken);
+        apiClient.setToken(response.data.accessToken, response.data.expiresAt);
         
         return response.data;
       }
@@ -143,9 +146,10 @@ export class AuthService {
       );
 
       if (response.success && response.data) {
-        // Token'ları kaydet
-        apiClient.setToken(response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+        // Token'ları güvenli şekilde kaydet (sessionStorage)
+        saveToken(response.data.accessToken, response.data.expiresAt);
+        saveRefreshToken(response.data.refreshToken);
+        apiClient.setToken(response.data.accessToken, response.data.expiresAt);
         
         return response.data;
       }
@@ -166,8 +170,8 @@ export class AuthService {
    */
   static async refreshAccessToken(refreshToken?: string): Promise<RefreshTokenResponse> {
     try {
-      // Eğer refreshToken verilmemişse localStorage'dan al
-      const tokenToUse = refreshToken || localStorage.getItem('refreshToken');
+      // Eğer refreshToken verilmemişse sessionStorage'dan al
+      const tokenToUse = refreshToken || getRefreshToken();
       
       if (!tokenToUse) {
         throw new ApiError('Refresh token bulunamadı');
@@ -179,9 +183,10 @@ export class AuthService {
       );
 
       if (response.success && response.data) {
-        // Yeni token'ları kaydet
-        apiClient.setToken(response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+        // Yeni token'ları güvenli şekilde kaydet (sessionStorage)
+        saveToken(response.data.accessToken, response.data.expiresAt);
+        saveRefreshToken(response.data.refreshToken);
+        apiClient.setToken(response.data.accessToken, response.data.expiresAt);
         
         return response.data;
       }
@@ -201,16 +206,16 @@ export class AuthService {
    */
   static async logout(): Promise<void> {
     try {
-      // Token'ları temizle
+      // Token'ları temizle (sessionStorage'dan)
+      clearTokens();
       apiClient.clearToken();
-      localStorage.removeItem('refreshToken');
     } catch (error) {
       // Logout hatası önemli değil, token'ı temizle
       console.warn('Logout hatası:', error);
     } finally {
       // Her durumda token'ları temizle (double check)
+      clearTokens();
       apiClient.clearToken();
-      localStorage.removeItem('refreshToken');
     }
   }
 
@@ -240,7 +245,7 @@ export class AuthService {
    * @returns Token geçerli mi?
    */
   static isAuthenticated(): boolean {
-    return apiClient.isAuthenticated();
+    return apiClient.isAuthenticated() && !!getToken();
   }
 
   /**
@@ -422,7 +427,7 @@ export class TokenHelper {
    */
   static getCurrentUser(): User | null {
     try {
-      const token = localStorage.getItem('te4it_token');
+      const token = getToken();
       
       if (!token) {
         return null;
@@ -458,7 +463,7 @@ export class TokenHelper {
    */
   static getTokenExpirationDate(): Date | null {
     try {
-      const token = localStorage.getItem('te4it_token');
+      const token = getToken();
       
       if (!token) {
         return null;

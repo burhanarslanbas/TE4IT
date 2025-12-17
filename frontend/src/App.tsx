@@ -13,10 +13,20 @@ import { LoginPage } from "./components/login-page";
 import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { ForgotPasswordPage } from "./components/forgot-password-page";
+import { ProjectsListPage } from "./pages/ProjectsListPage";
+import { ProjectDetailPage } from "./pages/projects/ProjectDetailPage/ProjectDetailPage";
+import { ModuleDetailPage } from "./pages/ModuleDetailPage";
+import { UseCaseDetailPage } from "./pages/UseCaseDetailPage";
+import { CreateProjectPage } from "./pages/CreateProjectPage";
+import { CreateModulePage } from "./pages/CreateModulePage";
+import { CreateUseCasePage } from "./pages/CreateUseCasePage";
+import { CreateTaskPage } from "./pages/CreateTaskPage";
+import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 /**
  * Protected Route Bileşeni
@@ -253,10 +263,23 @@ const ProfilePageWrapper = () => {
  * Ana App Bileşeni
  */
 export default function App() {
+  // API client'a unauthorized callback ekle (401 durumunda logout)
+  useEffect(() => {
+    apiClient.setUnauthorizedCallback(() => {
+      AuthService.logout();
+      toast.error('Oturum süreniz dolmuş', {
+        description: 'Lütfen tekrar giriş yapın.',
+        duration: 3000,
+      });
+      window.location.href = '/login';
+    });
+  }, []);
+
   return (
-    <Router>
-      <Layout>
-        <Routes>
+    <ErrorBoundary>
+      <Router>
+        <Layout>
+          <Routes>
           {/* Ana Sayfa */}
           <Route path="/" element={<HomePage />} />
           
@@ -308,11 +331,102 @@ export default function App() {
               </ProtectedRoute>
             } 
           />
+
+          {/* Projects List - Protected Route */}
+          <Route 
+            path="/projects" 
+            element={
+              <ProtectedRoute>
+                <ProjectsListPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create Project - Protected Route */}
+          <Route 
+            path="/projects/new" 
+            element={
+              <ProtectedRoute>
+                <CreateProjectPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Project Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId" 
+            element={
+              <ProtectedRoute>
+                <ProjectDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create Module - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/new" 
+            element={
+              <ProtectedRoute>
+                <CreateModulePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Module Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId" 
+            element={
+              <ProtectedRoute>
+                <ModuleDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create UseCase - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId/usecases/new" 
+            element={
+              <ProtectedRoute>
+                <CreateUseCasePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create Task - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId/tasks/new" 
+            element={
+              <ProtectedRoute>
+                <CreateTaskPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* UseCase Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId" 
+            element={
+              <ProtectedRoute>
+                <UseCaseDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Task Detail - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId/tasks/:taskId" 
+            element={
+              <ProtectedRoute>
+                <TaskDetailPage />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* 404 - Not Found */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </Router>
+          </Routes>
+        </Layout>
+      </Router>
+    </ErrorBoundary>
   );
 }

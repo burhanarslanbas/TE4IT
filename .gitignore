@@ -57,6 +57,7 @@ artifacts/
 .nuget/
 
 # Environment Files
+ai-service/.env
 *.env
 .env.local
 .env.*.local
@@ -161,4 +162,3 @@ captures/
 *.cache
 *.tmp
 *.temp
-

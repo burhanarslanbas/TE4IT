@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
+import { useLanguage } from "../contexts/LanguageContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Globe } from "lucide-react";
 
 interface NavigationProps {
   isAuthenticated?: boolean;
@@ -11,6 +20,7 @@ interface NavigationProps {
 
 export function Navigation({ isAuthenticated = false, onLogout }: NavigationProps) {
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <motion.nav
@@ -27,18 +37,33 @@ export function Navigation({ isAuthenticated = false, onLogout }: NavigationProp
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              Özellikler
+              {t('nav.features')}
             </a>
             <a href="#pricing" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              Fiyatlandırma
+              {t('nav.pricing')}
             </a>
             <a href="#why-us" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              Neden Biz?
+              {t('nav.whyUs')}
             </a>
           </div>
           
           {/* Buttons */}
           <div className="flex items-center space-x-4">
+            {/* Language Selector */}
+            <Select value={language} onValueChange={(value) => setLanguage(value as 'tr' | 'en')}>
+              <SelectTrigger className="w-[100px] h-9 bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]">
+                <Globe className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#161B22] border-[#30363D]">
+                <SelectItem value="tr" className="text-[#E5E7EB] focus:bg-[#8B5CF6]/10">
+                  🇹🇷 TR
+                </SelectItem>
+                <SelectItem value="en" className="text-[#E5E7EB] focus:bg-[#8B5CF6]/10">
+                  🇬🇧 EN
+                </SelectItem>
+              </SelectContent>
+            </Select>
             <ThemeToggle />
             
             {/* Authentication buttons - Conditional rendering */}
@@ -48,16 +73,23 @@ export function Navigation({ isAuthenticated = false, onLogout }: NavigationProp
                 <Button 
                   variant="ghost" 
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
+                  onClick={() => navigate("/projects")}
+                >
+                  {t('nav.projects')}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
                   onClick={() => navigate("/profile")}
                 >
-                  Profil
+                  {t('nav.profile')}
                 </Button>
                 <Button 
                   variant="ghost" 
                   className="text-[#EF4444] hover:bg-[#EF4444]/10 border border-[#EF4444]/30"
                   onClick={onLogout}
                 >
-                  Çıkış Yap
+                  {t('nav.logout')}
                 </Button>
               </>
             ) : (
@@ -68,13 +100,13 @@ export function Navigation({ isAuthenticated = false, onLogout }: NavigationProp
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
                   onClick={() => navigate("/login")}
                 >
-                  Giriş Yap
+                  {t('nav.login')}
                 </Button>
                 <Button 
                   className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90 shadow-lg shadow-[#8B5CF6]/25"
                   onClick={() => navigate("/register")}
                 >
-                  Ücretsiz Başla
+                  {t('nav.register')}
                 </Button>
               </>
             )}

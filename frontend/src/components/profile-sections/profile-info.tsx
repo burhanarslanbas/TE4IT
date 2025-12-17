@@ -22,19 +22,21 @@ export function ProfileInfo() {
   const [isEditing, setIsEditing] = useState(false);
   const [originalData, setOriginalData] = useState(formData);
 
-  // İlk render'da kullanıcı bilgilerini set et
+  // İlk render'da kullanıcı bilgilerini set et (sadece mount'ta çalışır)
   useEffect(() => {
-    if (currentUser) {
+    const user = TokenHelper.getCurrentUser();
+    if (user) {
       const initialData = {
-        fullName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.userName,
-        userName: currentUser.userName || "",
-        email: currentUser.email || "",
+        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.userName,
+        userName: user.userName || "",
+        email: user.email || "",
         phone: "", // Kullanıcı kendi ekleyecek
       };
       setFormData(initialData);
       setOriginalData(initialData);
     }
-  }, [currentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Boş dependency array - sadece component mount olduğunda çalışır
 
   // İptal butonuna basıldığında değişiklikleri geri al
   const handleCancel = () => {
