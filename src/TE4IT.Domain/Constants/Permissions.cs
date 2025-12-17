@@ -42,6 +42,30 @@ public static class Permissions
         public const string View = "TaskRelation.View";
         public const string Delete = "TaskRelation.Delete";
     }
+
+    public static class Education
+    {
+        public const string CourseCreate = "Education.Course.Create";
+        public const string CourseUpdate = "Education.Course.Update";
+        public const string CourseDelete = "Education.Course.Delete";
+        public const string CourseView = "Education.Course.View";
+        
+        public const string RoadmapCreate = "Education.Roadmap.Create";
+        public const string RoadmapUpdate = "Education.Roadmap.Update";
+        public const string RoadmapDelete = "Education.Roadmap.Delete";
+        public const string RoadmapView = "Education.Roadmap.View";
+        
+        public const string ContentCreate = "Education.Content.Create";
+        public const string ContentUpdate = "Education.Content.Update";
+        public const string ContentDelete = "Education.Content.Delete";
+        public const string ContentAccess = "Education.Content.Access";
+        
+        public const string EnrollmentCreate = "Education.Enrollment.Create";
+        public const string EnrollmentView = "Education.Enrollment.View";
+        
+        public const string ProgressView = "Education.Progress.View";
+        public const string ProgressUpdate = "Education.Progress.Update";
+    }
 }
 
 

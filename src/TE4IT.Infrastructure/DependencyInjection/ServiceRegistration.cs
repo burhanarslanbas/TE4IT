@@ -9,6 +9,7 @@ using TE4IT.Infrastructure.Auth.Services.Authorization;
 using TE4IT.Infrastructure.Email.Services;
 using TE4IT.Infrastructure.Common;
 using TE4IT.Infrastructure.Options;
+using TE4IT.Infrastructure.Education.Services;
 using Microsoft.Extensions.Options;
 
 namespace TE4IT.Infrastructure;
@@ -69,6 +70,10 @@ public static class ServiceRegistration
 
 		// Invitation Token Service
 		services.AddScoped<IInvitationTokenService, InvitationTokenService>();
+
+		// Education Domain Services
+		services.AddScoped<Domain.Services.ICourseProgressService, CourseProgressService>();
+		services.AddScoped<Domain.Services.IVideoUrlService, VideoUrlService>();
 
 		return services;
 	}

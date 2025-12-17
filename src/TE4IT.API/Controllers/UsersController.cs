@@ -3,11 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Common.Pagination;
-using TE4IT.Application.Features.Auth.Commands.Users.AssignRoleToUser;
-using TE4IT.Application.Features.Auth.Commands.Users.RemoveRoleFromUser;
-using TE4IT.Application.Features.Auth.Queries.Users.GetAllUsers;
-using TE4IT.Application.Features.Auth.Queries.Users.GetUserById;
-using TE4IT.Application.Features.Auth.Queries.Users.GetUserRoles;
+using Commands = TE4IT.Application.Features.Auth.Commands.Users;
+using Queries = TE4IT.Application.Features.Auth.Queries.Users;
 
 namespace TE4IT.API.Controllers;
 
@@ -23,12 +20,12 @@ public class UsersController(IMediator mediator) : ControllerBase
     /// Tüm kullanıcıları sayfalı olarak listeler
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResult<UserResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<Queries.GetUserById.UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var query = new GetAllUsersQuery();
+        var query = new Queries.GetAllUsers.GetAllUsersQuery();
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -37,11 +34,11 @@ public class UsersController(IMediator mediator) : ControllerBase
     /// Kullanıcı ID'sine göre getirir
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Queries.GetUserById.UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var query = new GetUserByIdQuery(id);
+        var query = new Queries.GetUserById.GetUserByIdQuery(id);
         var result = await mediator.Send(query, ct);
         return result is null ? NotFound() : Ok(result);
     }
@@ -54,7 +51,7 @@ public class UsersController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserRoles(Guid id, CancellationToken ct)
     {
-        var query = new GetUserRolesQuery(id);
+        var query = new Queries.GetUserRoles.GetUserRolesQuery(id);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -63,7 +60,7 @@ public class UsersController(IMediator mediator) : ControllerBase
     /// Kullanıcıya rol atar (Sadece Administrator)
     /// </summary>
     [HttpPost("{id:guid}/roles/{roleName}")]
-    [ProducesResponseType(typeof(AssignRoleToUserCommandResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Commands.AssignRoleToUser.AssignRoleToUserCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,7 +69,7 @@ public class UsersController(IMediator mediator) : ControllerBase
         string roleName,
         CancellationToken ct)
     {
-        var command = new AssignRoleToUserCommand(id, roleName);
+        var command = new Commands.AssignRoleToUser.AssignRoleToUserCommand(id, roleName);
         var result = await mediator.Send(command, ct);
         return Ok(result);
     }
@@ -89,7 +86,7 @@ public class UsersController(IMediator mediator) : ControllerBase
         string roleName,
         CancellationToken ct)
     {
-        var command = new RemoveRoleFromUserCommand(id, roleName);
+        var command = new Commands.RemoveRoleFromUser.RemoveRoleFromUserCommand(id, roleName);
         await mediator.Send(command, ct);
         return NoContent();
     }

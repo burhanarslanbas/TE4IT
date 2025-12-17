@@ -1,11 +1,10 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TE4IT.Application.Features.TaskRelations.Commands.CreateTaskRelation;
-using TE4IT.Application.Features.TaskRelations.Commands.DeleteTaskRelation;
-using TE4IT.Application.Features.TaskRelations.Queries.GetTaskRelations;
 using TE4IT.Application.Features.Tasks.Responses;
 using TE4IT.Domain.Enums;
+using Commands = TE4IT.Application.Features.TaskRelations.Commands;
+using Queries = TE4IT.Application.Features.TaskRelations.Queries;
 
 namespace TE4IT.API.Controllers;
 
@@ -26,7 +25,7 @@ public class TaskRelationsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRelations(Guid taskId, CancellationToken ct)
     {
-        var query = new GetTaskRelationsQuery(taskId);
+        var query = new Queries.GetTaskRelations.GetTaskRelationsQuery(taskId);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -44,7 +43,7 @@ public class TaskRelationsController(IMediator mediator) : ControllerBase
         [FromBody] CreateTaskRelationRequest request,
         CancellationToken ct)
     {
-        var command = new CreateTaskRelationCommand(taskId, request.TargetTaskId, request.RelationType);
+        var command = new Commands.CreateTaskRelation.CreateTaskRelationCommand(taskId, request.TargetTaskId, request.RelationType);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -59,7 +58,7 @@ public class TaskRelationsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid taskId, Guid relationId, CancellationToken ct)
     {
-        var ok = await mediator.Send(new DeleteTaskRelationCommand(taskId, relationId), ct);
+        var ok = await mediator.Send(new Commands.DeleteTaskRelation.DeleteTaskRelationCommand(taskId, relationId), ct);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -69,4 +68,3 @@ public class TaskRelationsController(IMediator mediator) : ControllerBase
 /// Görev ilişkisi oluşturma request DTO
 /// </summary>
 public record CreateTaskRelationRequest(Guid TargetTaskId, TaskRelationType RelationType);
-

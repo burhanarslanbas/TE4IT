@@ -9,9 +9,7 @@ namespace TE4IT.Infrastructure.Auth.Services;
 /// </summary>
 public sealed class InvitationTokenService : IInvitationTokenService
 {
-    /// <summary>
-    /// Güvenli davet token'ı oluşturur
-    /// </summary>
+    /// <summary> Güvenli davet token'ı oluşturur </summary>
     public string GenerateToken()
     {
         // İki GUID birleştir ve Base64'e çevir

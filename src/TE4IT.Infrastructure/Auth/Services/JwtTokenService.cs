@@ -33,6 +33,8 @@ public sealed class JwtTokenService(IConfiguration configuration) : ITokenServic
             claims.Add(new Claim("permissions_version", permissionsVersion!));
         }
 
+        // Key ID ekle (kid) - symmetric key için opsiyonel ama bazı validasyonlar için gerekli
+        signingKey.KeyId = "default-key";
         var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(15); // ✅ 15 dakika (güvenlik için kısa süre)
 

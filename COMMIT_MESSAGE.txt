@@ -1,0 +1,39 @@
+feat(education): complete Education module implementation and fixes
+
+- Add domain event firing for Course, Enrollment, Content, and Course completion
+- Implement VideoUrlService for video embed URL generation and platform detection
+- Complete progress calculation in GetCourseByIdQueryHandler
+- Fix Enrollment lifecycle management (StartedAt and CompletedAt)
+- Add EnrollmentCount calculation to course responses
+- Add Platform field to ContentResponse for video content
+- Make AddDomainEvent public in AggregateRoot for handler access
+
+BREAKING CHANGES: None
+
+Fixes:
+- CourseCreatedEvent now fires when course is created
+- EnrollmentCreatedEvent now fires when user enrolls in course
+- ContentCompletedEvent now fires when content is completed
+- CourseCompletedEvent now fires when course is completed
+- Enrollment.StartedAt is now set on first content access
+- Enrollment.CompletedAt is now set when course is completed
+- Progress percentage is now calculated correctly
+- Video content now includes embedUrl and platform information
+
+New Features:
+- VideoUrlService implementation (YouTube and Vimeo support)
+- GetEnrollmentCountByCourseAsync repository method
+- Platform field in ContentResponse
+
+Files Changed:
+- AggregateRoot: Made AddDomainEvent public
+- CreateCourseCommandHandler: Added CourseCreatedEvent
+- EnrollInCourseCommandHandler: Added EnrollmentCreatedEvent
+- CompleteContentCommandHandler: Added ContentCompletedEvent, CourseCompletedEvent, Enrollment lifecycle management
+- GetCourseByIdQueryHandler: Added progress calculation, video URL service integration, enrollment count
+- VideoUrlService: New service implementation
+- ServiceRegistration: Registered IVideoUrlService
+- IEnrollmentReadRepository: Added GetEnrollmentCountByCourseAsync
+- EnrollmentReadRepository: Implemented GetEnrollmentCountByCourseAsync
+- ContentResponse: Added Platform field
+

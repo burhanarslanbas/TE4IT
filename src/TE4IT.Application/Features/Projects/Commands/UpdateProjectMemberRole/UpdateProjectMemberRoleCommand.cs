@@ -6,5 +6,5 @@ namespace TE4IT.Application.Features.Projects.Commands.UpdateProjectMemberRole;
 public sealed record UpdateProjectMemberRoleCommand(
     Guid ProjectId,
     Guid UserId,
-    ProjectRole NewRole) : IRequest<bool>;
+    ProjectRole Role) : IRequest<bool>;
 

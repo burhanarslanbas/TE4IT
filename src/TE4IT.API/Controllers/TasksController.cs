@@ -2,11 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Common.Pagination;
-using TE4IT.Application.Features.Tasks.Commands.CreateTask;
-using TE4IT.Application.Features.Tasks.Queries.GetTaskById;
-using TE4IT.Application.Features.Tasks.Queries.ListTasks;
 using TE4IT.Application.Features.Tasks.Responses;
 using TE4IT.Domain.Enums;
+using Commands = TE4IT.Application.Features.Tasks.Commands;
+using Queries = TE4IT.Application.Features.Tasks.Queries;
 
 namespace TE4IT.API.Controllers;
 
@@ -37,7 +36,7 @@ public class TasksController(IMediator mediator) : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        var query = new ListTasksQuery(useCaseId, page, pageSize, state, type, assigneeId, dueDateFrom, dueDateTo, search);
+        var query = new Queries.ListTasks.ListTasksQuery(useCaseId, page, pageSize, state, type, assigneeId, dueDateFrom, dueDateTo, search);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -51,7 +50,7 @@ public class TasksController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var query = new GetTaskByIdQuery(id);
+        var query = new Queries.GetTaskById.GetTaskByIdQuery(id);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -61,7 +60,7 @@ public class TasksController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("usecases/{useCaseId:guid}")]
     [Authorize(Policy = "TaskCreate")]
-    [ProducesResponseType(typeof(CreateTaskCommandResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(Commands.CreateTask.CreateTaskCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
@@ -69,7 +68,7 @@ public class TasksController(IMediator mediator) : ControllerBase
         [FromBody] CreateTaskRequest request,
         CancellationToken ct)
     {
-        var command = new CreateTaskCommand(useCaseId, request.Title, request.TaskType, request.Description, request.ImportantNotes, request.DueDate, request.AssigneeId);
+        var command = new Commands.CreateTask.CreateTaskCommand(useCaseId, request.Title, request.TaskType, request.Description, request.ImportantNotes, request.DueDate, request.AssigneeId);
         var result = await mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -87,7 +86,7 @@ public class TasksController(IMediator mediator) : ControllerBase
         [FromBody] UpdateTaskRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.Tasks.Commands.UpdateTask.UpdateTaskCommand(
+        var command = new Commands.UpdateTask.UpdateTaskCommand(
             id, request.Title, request.Description, request.ImportantNotes, request.DueDate);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
@@ -107,7 +106,7 @@ public class TasksController(IMediator mediator) : ControllerBase
         [FromBody] ChangeTaskStateRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.Tasks.Commands.ChangeTaskState.ChangeTaskStateCommand(id, request.NewState);
+        var command = new Commands.ChangeTaskState.ChangeTaskStateCommand(id, request.NewState);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -126,7 +125,7 @@ public class TasksController(IMediator mediator) : ControllerBase
         [FromBody] AssignTaskRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.Tasks.Commands.AssignTask.AssignTaskCommand(id, request.AssigneeId);
+        var command = new Commands.AssignTask.AssignTaskCommand(id, request.AssigneeId);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -141,7 +140,7 @@ public class TasksController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var ok = await mediator.Send(new TE4IT.Application.Features.Tasks.Commands.DeleteTask.DeleteTaskCommand(id), ct);
+        var ok = await mediator.Send(new Commands.DeleteTask.DeleteTaskCommand(id), ct);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -166,4 +165,3 @@ public record ChangeTaskStateRequest(TaskState NewState);
 /// Görev atama request DTO
 /// </summary>
 public record AssignTaskRequest(Guid AssigneeId);
-

@@ -2,9 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Common.Pagination;
-using TE4IT.Application.Features.Modules.Commands.CreateModule;
-using TE4IT.Application.Features.Modules.Queries.GetModuleById;
-using TE4IT.Application.Features.Modules.Queries.ListModules;
+using Commands = TE4IT.Application.Features.Modules.Commands;
+using Queries = TE4IT.Application.Features.Modules.Queries;
 using TE4IT.Application.Features.Modules.Responses;
 
 namespace TE4IT.API.Controllers;
@@ -32,7 +31,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        var query = new ListModulesQuery(projectId, page, pageSize, isActive, search);
+        var query = new Queries.ListModules.ListModulesQuery(projectId, page, pageSize, isActive, search);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -46,7 +45,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var query = new GetModuleByIdQuery(id);
+        var query = new Queries.GetModuleById.GetModuleByIdQuery(id);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -56,7 +55,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("projects/{projectId:guid}")]
     [Authorize(Policy = "ModuleCreate")]
-    [ProducesResponseType(typeof(CreateModuleCommandResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(Commands.CreateModule.CreateModuleCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
@@ -64,7 +63,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
         [FromBody] CreateModuleRequest request,
         CancellationToken ct)
     {
-        var command = new CreateModuleCommand(projectId, request.Title, request.Description);
+        var command = new Commands.CreateModule.CreateModuleCommand(projectId, request.Title, request.Description);
         var result = await mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -82,7 +81,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
         [FromBody] UpdateModuleRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.Modules.Commands.UpdateModule.UpdateModuleCommand(id, request.Title, request.Description);
+        var command = new Commands.UpdateModule.UpdateModuleCommand(id, request.Title, request.Description);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -101,7 +100,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
         [FromBody] ChangeModuleStatusRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.Modules.Commands.ChangeModuleStatus.ChangeModuleStatusCommand(id, request.IsActive);
+        var command = new Commands.ChangeModuleStatus.ChangeModuleStatusCommand(id, request.IsActive);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -116,7 +115,7 @@ public class ModulesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var ok = await mediator.Send(new TE4IT.Application.Features.Modules.Commands.DeleteModule.DeleteModuleCommand(id), ct);
+        var ok = await mediator.Send(new Commands.DeleteModule.DeleteModuleCommand(id), ct);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -136,4 +135,3 @@ public record UpdateModuleRequest(string Title, string? Description);
 /// Modül durum değiştirme request DTO
 /// </summary>
 public record ChangeModuleStatusRequest(bool IsActive);
-

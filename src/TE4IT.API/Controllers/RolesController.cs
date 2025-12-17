@@ -2,11 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TE4IT.Application.Features.Auth.Commands.Roles.CreateRole;
-using TE4IT.Application.Features.Auth.Commands.Roles.DeleteRole;
-using TE4IT.Application.Features.Auth.Commands.Roles.UpdateRole;
-using TE4IT.Application.Features.Auth.Queries.Roles.GetAllRoles;
-using TE4IT.Application.Features.Auth.Queries.Roles.GetRoleById;
+using Commands = TE4IT.Application.Features.Auth.Commands.Roles;
+using Queries = TE4IT.Application.Features.Auth.Queries.Roles;
 
 namespace TE4IT.API.Controllers;
 
@@ -22,10 +19,10 @@ public class RolesController(IMediator mediator) : ControllerBase
     /// Tüm rolleri listeler
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<RoleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<Queries.GetAllRoles.RoleResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var query = new GetAllRolesQuery();
+        var query = new Queries.GetAllRoles.GetAllRolesQuery();
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -34,11 +31,11 @@ public class RolesController(IMediator mediator) : ControllerBase
     /// Rol ID'sine göre getirir
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(RoleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Queries.GetAllRoles.RoleResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var query = new GetRoleByIdQuery(id);
+        var query = new Queries.GetRoleById.GetRoleByIdQuery(id);
         var result = await mediator.Send(query, ct);
         return result is null ? NotFound() : Ok(result);
     }
@@ -47,10 +44,10 @@ public class RolesController(IMediator mediator) : ControllerBase
     /// Yeni rol oluşturur
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(CreateRoleCommandResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(Commands.CreateRole.CreateRoleCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateRoleCommand command,
+        [FromBody] Commands.CreateRole.CreateRoleCommand command,
         CancellationToken ct)
     {
         var result = await mediator.Send(command, ct);
@@ -61,12 +58,12 @@ public class RolesController(IMediator mediator) : ControllerBase
     /// Rolü günceller
     /// </summary>
     [HttpPatch("{id:guid}")]
-    [ProducesResponseType(typeof(UpdateRoleCommandResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Commands.UpdateRole.UpdateRoleCommandResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken ct)
     {
-        var command = new UpdateRoleCommand(id, request.RoleName);
+        var command = new Commands.UpdateRole.UpdateRoleCommand(id, request.RoleName);
         var result = await mediator.Send(command, ct);
         return Ok(result);
     }
@@ -79,7 +76,7 @@ public class RolesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var command = new DeleteRoleCommand(id);
+        var command = new Commands.DeleteRole.DeleteRoleCommand(id);
         await mediator.Send(command, ct);
         return NoContent();
     }
