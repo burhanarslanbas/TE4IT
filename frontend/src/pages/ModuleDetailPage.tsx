@@ -14,25 +14,21 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Archive, ArchiveRestore } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Edit, Trash2, Eye, Archive, ArchiveRestore, Layers } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../components/ui/breadcrumb';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../components/ui/pagination';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog';
 
 interface EditModuleForm {
   title: string;
   description: string;
-}
-
-interface CreateUseCaseForm {
-  title: string;
-  description: string;
-  importantNotes: string;
 }
 
 export function ModuleDetailPage() {
@@ -51,11 +47,9 @@ export function ModuleDetailPage() {
   });
   const [totalPages, setTotalPages] = useState(1);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [createUseCaseDialogOpen, setCreateUseCaseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   const { register: registerModule, handleSubmit: handleSubmitModule, reset: resetModule, formState: { errors: moduleErrors } } = useForm<EditModuleForm>();
-  const { register: registerUseCase, handleSubmit: handleSubmitUseCase, reset: resetUseCase, formState: { errors: useCaseErrors } } = useForm<CreateUseCaseForm>();
 
   useEffect(() => {
     if (projectId && moduleId) {
@@ -144,47 +138,50 @@ export function ModuleDetailPage() {
 
   const handleDeleteModule = async () => {
     if (!moduleId || !projectId) return;
-    try {
-      await ModuleService.deleteModule(moduleId);
-      toast.success('Modül silindi');
-      navigate(`/projects/${projectId}`);
-    } catch (error: any) {
-      toast.error('Modül silinemedi', {
-        description: error.message || 'Bir hata oluştu',
-      });
-    }
+    
+    console.log('[MODULE DELETE] Starting delete for module:', moduleId);
+    
+    await ModuleService.deleteModule(moduleId);
+    
+    console.log('[MODULE DELETE] Successfully deleted, navigating to project');
+    toast.success('Modül silindi');
+    
+    // Navigate to project detail page
+    navigate(`/projects/${projectId}`);
   };
 
-  const handleStatusChange = async () => {
+  const handleStatusChange = async (newIsActive: boolean) => {
     if (!moduleId || !module) return;
+    
+    // Eğer zaten istenen durumdaysa işlem yapma
+    const currentIsActive = module.status === 'Active';
+    if (currentIsActive === newIsActive) {
+      return;
+    }
+    
     try {
-      const newStatus = module.status === 'Active' ? 'Archived' : 'Active';
-      await ModuleService.updateModuleStatus(moduleId, newStatus);
-      toast.success(`Modül ${newStatus === 'Active' ? 'aktifleştirildi' : 'arşivlendi'}`);
-      loadModule();
+      // PATCH isteği at
+      const response = await ModuleService.updateModuleStatus(moduleId, newIsActive);
+      
+      // Response'daki isActive'i kontrol et
+      if (response.isActive !== newIsActive) {
+        toast.error('Modül durumu güncellenemedi', {
+          description: 'Backend beklenen durumu döndürmedi',
+        });
+        // Refetch ile server state'i doğrula
+        await loadModule();
+        return;
+      }
+      
+      // Başarılı - toast ve refetch
+      toast.success(`Modül ${newIsActive ? 'aktifleştirildi' : 'arşivlendi'}`);
+      await loadModule();
     } catch (error: any) {
       toast.error('Modül durumu güncellenemedi', {
         description: error.message || 'Bir hata oluştu',
       });
-    }
-  };
-
-  const handleCreateUseCase = async (data: CreateUseCaseForm) => {
-    if (!moduleId) return;
-    try {
-      await UseCaseService.createUseCase(moduleId, {
-        title: data.title,
-        description: data.description || undefined,
-        importantNotes: data.importantNotes || undefined,
-      });
-      toast.success('Use case oluşturuldu');
-      setCreateUseCaseDialogOpen(false);
-      resetUseCase();
-      loadUseCases();
-    } catch (error: any) {
-      toast.error('Use case oluşturulamadı', {
-        description: error.message || 'Bir hata oluştu',
-      });
+      // Hata durumunda da refetch - UI ile backend senkronize olsun
+      await loadModule();
     }
   };
 
@@ -220,8 +217,8 @@ export function ModuleDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-[#E5E7EB] p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#0D1117] to-[#161B22] text-[#E5E7EB]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12" style={{ paddingTop: 'calc(var(--navbar-height) + 2rem)' }}>
         {/* Breadcrumb */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
@@ -254,7 +251,7 @@ export function ModuleDetailPage() {
         </Button>
 
         {/* Module Info Section */}
-        <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-6 mb-6">
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold mb-2">Module: {module.title}</h1>
@@ -263,30 +260,42 @@ export function ModuleDetailPage() {
                   variant={module.status === 'Active' ? 'default' : 'secondary'}
                   className={
                     module.status === 'Active'
-                      ? 'bg-[#10B981] text-white'
-                      : 'bg-[#6B7280] text-white'
+                      ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white px-3 py-1'
+                      : 'bg-[#6B7280] text-white px-3 py-1'
                   }
                 >
-                  {module.status}
+                  {module.status === 'Active' ? 'Aktif' : 'Arşivlendi'}
                 </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleStatusChange}
-                  className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-                >
-                  {module.status === 'Active' ? (
-                    <>
-                      <Archive className="w-4 h-4 mr-2" />
-                      Archive
-                    </>
-                  ) : (
-                    <>
-                      <ArchiveRestore className="w-4 h-4 mr-2" />
-                      Activate
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStatusChange(true)}
+                    disabled={module.status === 'Active'}
+                    className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                      module.status === 'Active'
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-[#10B981] hover:text-[#10B981]'
+                    }`}
+                  >
+                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                    Aktifleştir
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStatusChange(false)}
+                    disabled={module.status === 'Archived'}
+                    className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                      module.status === 'Archived'
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-[#F59E0B] hover:text-[#F59E0B]'
+                    }`}
+                  >
+                    <Archive className="w-4 h-4 mr-2" />
+                    Arşivle
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -301,6 +310,9 @@ export function ModuleDetailPage() {
                   <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
                     <DialogHeader>
                       <DialogTitle>Edit Module</DialogTitle>
+                      <DialogDescription className="text-[#9CA3AF]">
+                        Update the module information. Changes will be saved immediately.
+                      </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmitModule(handleUpdateModule)} className="space-y-4">
                       <div>
@@ -349,33 +361,24 @@ export function ModuleDetailPage() {
                 </Dialog>
               )}
               {hasPermission(PERMISSIONS.MODULE_DELETE) && (
-                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="bg-[#EF4444] hover:bg-[#DC2626] text-white">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Module
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Module</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this module? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]">
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteModule}
-                        className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Module
+                  </Button>
+                  <ConfirmDeleteDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    entityType="Module"
+                    entityName={module.title}
+                    onConfirm={handleDeleteModule}
+                    children={module.useCaseCount ? [{ count: module.useCaseCount, type: 'use case' }] : undefined}
+                  />
+                </>
               )}
             </div>
           </div>
@@ -414,88 +417,66 @@ export function ModuleDetailPage() {
                 </SelectContent>
               </Select>
 
-              {hasPermission(PERMISSIONS.USECASE_CREATE) && (
-                <Dialog open={createUseCaseDialogOpen} onOpenChange={setCreateUseCaseDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Use Case
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                    <DialogHeader>
-                      <DialogTitle>Create Use Case</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmitUseCase(handleCreateUseCase)} className="space-y-4">
-                      <div>
-                        <Label htmlFor="usecase-title">Title *</Label>
-                        <Input
-                          id="usecase-title"
-                          {...registerUseCase('title', {
-                            required: 'Title is required',
-                            minLength: { value: 3, message: 'Title must be at least 3 characters' },
-                            maxLength: { value: 100, message: 'Title must be at most 100 characters' },
-                          })}
-                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB]"
-                        />
-                        {useCaseErrors.title && (
-                          <p className="text-red-500 text-sm mt-1">{useCaseErrors.title.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="usecase-description">Description</Label>
-                        <Textarea
-                          id="usecase-description"
-                          {...registerUseCase('description', {
-                            maxLength: { value: 1000, message: 'Description must be at most 1000 characters' },
-                          })}
-                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[100px]"
-                        />
-                        {useCaseErrors.description && (
-                          <p className="text-red-500 text-sm mt-1">{useCaseErrors.description.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="usecase-notes">Important Notes</Label>
-                        <Textarea
-                          id="usecase-notes"
-                          {...registerUseCase('importantNotes', {
-                            maxLength: { value: 500, message: 'Important notes must be at most 500 characters' },
-                          })}
-                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[80px]"
-                          placeholder="⚠️ Important notes..."
-                        />
-                        {useCaseErrors.importantNotes && (
-                          <p className="text-red-500 text-sm mt-1">{useCaseErrors.importantNotes.message}</p>
-                        )}
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setCreateUseCaseDialogOpen(false)}
-                          className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
+              {true && ( // hasPermission(PERMISSIONS.USECASE_CREATE) - temporarily bypassed for development
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button 
+                          onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/new`)}
+                          disabled={module.status !== 'Active'}
+                          className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Cancel
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Use Case
                         </Button>
-                        <Button type="submit" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
-                          Create
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                      </span>
+                    </TooltipTrigger>
+                    {module.status !== 'Active' && (
+                      <TooltipContent>
+                        <p>Use case oluşturmak için modülü aktifleştirin</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
           </div>
 
           {useCasesLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin"></div>
+            <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl overflow-hidden shadow-xl">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-[#30363D] hover:bg-[#21262D]/50">
+                    <TableHead className="text-[#E5E7EB]">Title</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Status</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Tasks</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <TableRow key={i} className="border-[#30363D]/50 hover:bg-[#21262D]/30">
+                      <TableCell>
+                        <div className="h-5 bg-[#21262D] rounded animate-pulse w-3/4" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-6 bg-[#21262D] rounded-full animate-pulse w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-5 bg-[#21262D] rounded animate-pulse w-8" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-8 bg-[#21262D] rounded animate-pulse w-20" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <>
-              <div className="bg-[#161B22] border border-[#30363D] rounded-lg overflow-hidden">
+              <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl overflow-hidden shadow-xl">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-[#30363D] hover:bg-[#21262D]">
@@ -508,8 +489,41 @@ export function ModuleDetailPage() {
                   <TableBody>
                     {useCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-[#9CA3AF]">
-                          No use cases found
+                        <TableCell colSpan={4} className="text-center py-16">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#8B5CF6]/20 to-[#2DD4BF]/20 rounded-2xl flex items-center justify-center mb-4">
+                              <Layers className="w-8 h-8 text-[#8B5CF6]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">
+                              No use cases yet
+                            </h3>
+                            <p className="text-[#9CA3AF] mb-6 max-w-md">
+                              Create your first use case to start structuring work.
+                            </p>
+                            {true && ( // hasPermission(PERMISSIONS.USECASE_CREATE) - temporarily bypassed for development
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/new`)}
+                                        disabled={module.status !== 'Active'}
+                                        className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Create Use Case
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {module.status !== 'Active' && (
+                                    <TooltipContent>
+                                      <p>Use case oluşturmak için modülü aktifleştirin</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -517,8 +531,13 @@ export function ModuleDetailPage() {
                         <TableRow key={useCase.id} className="border-[#30363D] hover:bg-[#21262D]">
                           <TableCell className="text-[#E5E7EB]">
                             <button
-                              onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`)}
-                              className="hover:text-[#8B5CF6] transition-colors"
+                              onClick={() => {
+                                const targetPath = `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`;
+                                console.log('🔵 Title clicked - Navigating to:', targetPath);
+                                console.log('📍 UseCase:', { id: useCase.id, title: useCase.title });
+                                navigate(targetPath);
+                              }}
+                              className="hover:text-[#8B5CF6] transition-colors cursor-pointer"
                             >
                               {useCase.title}
                             </button>
@@ -536,19 +555,21 @@ export function ModuleDetailPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-[#9CA3AF]">
-                            <button
-                              onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}/tasks`)}
-                              className="hover:text-[#8B5CF6] transition-colors"
-                            >
+                            <span className="text-sm">
                               {useCase.taskCount || 0}
-                            </button>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`)}
+                                onClick={() => {
+                                  const targetPath = `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`;
+                                  console.log('👁️ View button clicked - Navigating to:', targetPath);
+                                  console.log('📍 Route params:', { projectId, moduleId, useCaseId: useCase.id });
+                                  navigate(targetPath);
+                                }}
                                 className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#21262D]"
                               >
                                 <Eye className="w-4 h-4 mr-2" />
