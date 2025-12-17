@@ -4,6 +4,24 @@
  */
 
 /**
+ * Permission constant'ları
+ */
+export const PERMISSIONS = {
+  PROJECT_CREATE: 'ProjectCreate',
+  PROJECT_UPDATE: 'ProjectUpdate',
+  PROJECT_DELETE: 'ProjectDelete',
+  MODULE_CREATE: 'ModuleCreate',
+  MODULE_UPDATE: 'ModuleUpdate',
+  MODULE_DELETE: 'ModuleDelete',
+  USECASE_CREATE: 'UseCaseCreate',
+  USECASE_UPDATE: 'UseCaseUpdate',
+  USECASE_DELETE: 'UseCaseDelete',
+  TASK_CREATE: 'TaskCreate',
+  TASK_UPDATE: 'TaskUpdate',
+  TASK_DELETE: 'TaskDelete',
+} as const;
+
+/**
  * JWT token'dan permission'ları al
  */
 export const getPermissionsFromToken = (): string[] => {

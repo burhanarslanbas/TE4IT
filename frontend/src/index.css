@@ -2957,6 +2957,7 @@
 
 :root {
   --font-size: 16px;
+  --navbar-height: 72px;
   --background: #fff;
   --foreground: #1f2937;
   --card: #fff;

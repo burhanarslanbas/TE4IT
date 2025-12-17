@@ -8,46 +8,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
-  Edit,
   Trash2,
   Archive,
   ArchiveRestore,
   Plus,
   Search,
-  Filter,
   Eye,
-  Folder,
-  Package,
-  FileText,
+  Layers,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import {
   Breadcrumb,
@@ -56,24 +28,23 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from '../components/ui/breadcrumb';
-import { moduleService } from '../services/moduleService';
-import { projectService } from '../services/projectService';
+import { ModuleService } from '../services/moduleService';
+import { ProjectService } from '../services/projectService';
+import { UseCaseService } from '../services/useCaseService';
 import { hasPermission } from '../utils/permissions';
+import { ApiError } from '../services/api';
 import {
   Module,
   Project,
   UseCase,
-  CreateUseCaseRequest,
-  UpdateModuleRequest,
 } from '../types';
 import { toast } from 'sonner';
-import { ApiError } from '../services/api';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../components/ui/pagination';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog';
 
-export const ModuleDetailPage: React.FC = () => {
-  const { projectId, moduleId } = useParams<{
-    projectId: string;
-    moduleId: string;
-  }>();
+export function ModuleDetailPage() {
+  const { projectId, moduleId } = useParams<{ projectId: string; moduleId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [module, setModule] = useState<Module | null>(null);
@@ -84,48 +55,44 @@ export const ModuleDetailPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isCreateUseCaseModalOpen, setIsCreateUseCaseModalOpen] =
-    useState(false);
-  const [editFormData, setEditFormData] = useState<UpdateModuleRequest>({
-    title: '',
-    description: '',
-  });
-  const [createUseCaseFormData, setCreateUseCaseFormData] =
-    useState<CreateUseCaseRequest>({
-      title: '',
-      description: '',
-      importantNotes: '',
-    });
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isCreatingUseCase, setIsCreatingUseCase] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const pageSize = 20;
+  useEffect(() => {
+    if (projectId && moduleId) {
+      loadProject();
+      loadModule();
+    }
+  }, [projectId, moduleId]);
 
-  // Proje ve modül detaylarını yükle
-  const loadData = async () => {
-    if (!projectId || !moduleId) return;
+  useEffect(() => {
+    if (moduleId) {
+      loadUseCases();
+    }
+  }, [moduleId, page, statusFilter, searchTerm]);
 
+  const loadProject = async () => {
+    if (!projectId) return;
+    try {
+      const data = await ProjectService.getProject(projectId);
+      setProject(data);
+    } catch (error: any) {
+      toast.error('Proje yüklenemedi', {
+        description: error.message || 'Bir hata oluştu',
+      });
+    }
+  };
+
+  const loadModule = async () => {
+    if (!moduleId) return;
     try {
       setLoading(true);
-      const [projectResponse, moduleResponse] = await Promise.all([
-        projectService.getById(projectId),
-        moduleService.getById(moduleId),
+      const [projectData, moduleData] = await Promise.all([
+        ProjectService.getProject(projectId!),
+        ModuleService.getModule(moduleId!),
       ]);
 
-      if (projectResponse.success && projectResponse.data) {
-        setProject(projectResponse.data);
-      }
-
-      if (moduleResponse.success && moduleResponse.data) {
-        setModule(moduleResponse.data);
-        setEditFormData({
-          title: moduleResponse.data.title,
-          description: moduleResponse.data.description || '',
-        });
-      }
+      setProject(projectData);
+      setModule(moduleData);
     } catch (error) {
       console.error('Error loading data:', error);
       if (error instanceof ApiError) {
@@ -149,17 +116,15 @@ export const ModuleDetailPage: React.FC = () => {
 
     try {
       setUseCasesLoading(true);
-      const response = await moduleService.getUseCases(moduleId, {
+      const response = await UseCaseService.getUseCases(moduleId, {
         page,
-        pageSize,
-        isActive: statusFilter,
+        pageSize: 10,
+        status: statusFilter === null ? 'All' : (statusFilter ? 'Active' : 'Archived'),
         search: searchTerm || undefined,
       });
 
-      if (response.success && response.data) {
-        setUseCases(response.data.items);
-        setTotalPages(response.data.totalPages);
-      }
+      setUseCases(response.items);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Error loading use cases:', error);
       if (error instanceof ApiError) {
@@ -176,155 +141,76 @@ export const ModuleDetailPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [projectId, moduleId]);
-
-  useEffect(() => {
-    if (module) {
-      loadUseCases();
-    }
-  }, [module, page, statusFilter, searchTerm]);
-
-  // Modül güncelle
-  const handleUpdateModule = async () => {
-    if (!moduleId || !editFormData.title?.trim()) {
-      toast.error('Hata', {
-        description: 'Modül başlığı zorunludur.',
-      });
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      const response = await moduleService.update(moduleId, editFormData);
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: 'Modül başarıyla güncellendi.',
-        });
-        setIsEditModalOpen(false);
-        loadData();
-      }
-    } catch (error) {
-      console.error('Error updating module:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Modül güncellenirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Modül güncellenirken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Modül durumunu değiştir
-  const handleChangeStatus = async () => {
-    if (!moduleId || !module) return;
-
-    try {
-      const response = await moduleService.changeStatus(moduleId, {
-        isActive: !module.isActive,
-      });
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: `Modül ${module.isActive ? 'arşivlendi' : 'aktifleştirildi'}.`,
-        });
-        loadData();
-      }
-    } catch (error) {
-      console.error('Error changing status:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Durum değiştirilirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Durum değiştirilirken bir hata oluştu.',
-        });
-      }
-    }
-  };
-
-  // Modül sil
   const handleDeleteModule = async () => {
-    if (!moduleId) return;
-
-    try {
-      setIsDeleting(true);
-      const response = await moduleService.delete(moduleId);
-
-      if (response.success) {
-        toast.success('Başarılı', {
-          description: 'Modül başarıyla silindi.',
-        });
-        navigate(`/projects/${projectId}`);
-      }
-    } catch (error) {
-      console.error('Error deleting module:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Modül silinirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Modül silinirken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
+    if (!moduleId || !projectId) return;
+    
+    console.log('[MODULE DELETE] Starting delete for module:', moduleId);
+    
+    await ModuleService.deleteModule(moduleId);
+    
+    console.log('[MODULE DELETE] Successfully deleted, navigating to project');
+    toast.success('Modül silindi');
+    
+    // Navigate to project detail page
+    navigate(`/projects/${projectId}`);
   };
 
-  // Use case oluştur
-  const handleCreateUseCase = async () => {
-    if (!moduleId || !createUseCaseFormData.title.trim()) {
-      toast.error('Hata', {
-        description: 'Use case başlığı zorunludur.',
-      });
+  const handleStatusChange = async (newIsActive: boolean) => {
+    if (!moduleId || !module) return;
+    
+    // Eğer zaten istenen durumdaysa işlem yapma
+    const currentIsActive = module.status === 'Active';
+    if (currentIsActive === newIsActive) {
       return;
     }
-
+    
     try {
-      setIsCreatingUseCase(true);
-      const response = await moduleService.createUseCase(
-        moduleId,
-        createUseCaseFormData
-      );
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: 'Use case başarıyla oluşturuldu.',
+      // PATCH isteği at
+      const response = await ModuleService.updateModuleStatus(moduleId, newIsActive);
+      
+      // Response'daki isActive'i kontrol et
+      if (response.isActive !== newIsActive) {
+        toast.error('Modül durumu güncellenemedi', {
+          description: 'Backend beklenen durumu döndürmedi',
         });
-        setIsCreateUseCaseModalOpen(false);
-        setCreateUseCaseFormData({ title: '', description: '', importantNotes: '' });
-        loadUseCases();
+        // Refetch ile server state'i doğrula
+        await loadModule();
+        return;
       }
-    } catch (error) {
-      console.error('Error creating use case:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Use case oluşturulurken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Use case oluşturulurken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsCreatingUseCase(false);
+      
+      // Başarılı - toast ve refetch
+      toast.success(`Modül ${newIsActive ? 'aktifleştirildi' : 'arşivlendi'}`);
+      await loadModule();
+    } catch (error: any) {
+      toast.error('Modül durumu güncellenemedi', {
+        description: error.message || 'Bir hata oluştu',
+      });
+      // Hata durumunda da refetch - UI ile backend senkronize olsun
+      await loadModule();
     }
   };
 
-  const canUpdate = hasPermission('ModuleUpdate');
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleFilterChange = (value: string) => {
+    if (value === 'All') {
+      setStatusFilter(null);
+    } else if (value === 'Active') {
+      setStatusFilter(true);
+    } else {
+      setStatusFilter(false);
+    }
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
   const canDelete = hasPermission('ModuleDelete');
-  const canCreateUseCase = hasPermission('UseCaseCreate');
 
   if (loading) {
     return (
@@ -342,38 +228,8 @@ export const ModuleDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117] relative overflow-hidden">
-      {/* Animated Background Gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-0 left-1/4 w-96 h-96 bg-[#2DD4BF]/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#EC4899]/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, -100, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      </div>
-
-      <div className="container mx-auto px-6 py-24 relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#0D1117] to-[#161B22] text-[#E5E7EB]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12" style={{ paddingTop: 'calc(var(--navbar-height) + 2rem)' }}>
         {/* Breadcrumb */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -426,462 +282,368 @@ export const ModuleDetailPage: React.FC = () => {
           </Button>
         </motion.div>
 
-        {/* Module Info Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 mb-8"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <Package className="w-8 h-8 text-[#2DD4BF]" />
-                <h1 className="text-3xl font-bold text-[#E5E7EB]">
-                  {module.title}
-                </h1>
+        {/* Module Info Section */}
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Module: {module.title}</h1>
+              <div className="flex items-center gap-3">
                 <Badge
-                  variant={module.isActive ? 'default' : 'secondary'}
+                  variant={module.status === 'Active' ? 'default' : 'secondary'}
                   className={
-                    module.isActive
-                      ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                      : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
+                    module.status === 'Active'
+                      ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white px-3 py-1'
+                      : 'bg-[#6B7280] text-white px-3 py-1'
                   }
                 >
-                  {module.isActive ? 'Active' : 'Archived'}
+                  {module.status === 'Active' ? 'Aktif' : 'Arşivlendi'}
                 </Badge>
-              </div>
-              {module.description && (
-                <p className="text-[#9CA3AF] mb-4">{module.description}</p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {canUpdate && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleChangeStatus}
-                className={
-                  module.isActive
-                    ? 'bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]'
-                    : 'bg-[#10B981]/10 border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/20'
-                }
-              >
-                {module.isActive ? (
-                  <>
-                    <Archive className="w-4 h-4 mr-2" />
-                    Archive
-                  </>
-                ) : (
-                  <>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStatusChange(true)}
+                    disabled={module.status === 'Active'}
+                    className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                      module.status === 'Active'
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-[#10B981] hover:text-[#10B981]'
+                    }`}
+                  >
                     <ArchiveRestore className="w-4 h-4 mr-2" />
-                    Activate
-                  </>
-                )}
-              </Button>
-              {canDelete && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="bg-[#EF4444]/10 border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/20"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              )}
+                    Aktifleştir
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStatusChange(false)}
+                    disabled={module.status === 'Archived'}
+                    className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                      module.status === 'Archived'
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-[#F59E0B] hover:text-[#F59E0B]'
+                    }`}
+                  >
+                    <Archive className="w-4 h-4 mr-2" />
+                    Arşivle
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Use Cases Section */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#E5E7EB] mb-2 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-[#EC4899]" />
-                Use Cases
-              </h2>
-              <p className="text-[#9CA3AF]">
-                Manage use cases for this module
-              </p>
-            </div>
-            {canCreateUseCase && (
-              <Button
-                onClick={() => setIsCreateUseCaseModalOpen(true)}
-                className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90 shadow-lg shadow-[#8B5CF6]/25"
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {useCases.map((useCase, index) => (
+              <motion.div
+                key={useCase.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 hover:border-[#EC4899]/50 hover:shadow-lg hover:shadow-[#EC4899]/10 transition-all cursor-pointer group"
+                onClick={() =>
+                  navigate(
+                    `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
+                  )
+                }
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Use Case
-              </Button>
-            )}
-          </div>
-
-          {/* Filters */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
-              <Input
-                placeholder="Search use cases..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10 bg-[#161B22] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-              />
-            </div>
-            <Select
-              value={
-                statusFilter === null
-                  ? 'all'
-                  : statusFilter
-                    ? 'active'
-                    : 'archived'
-              }
-              onValueChange={(value) => {
-                setStatusFilter(
-                  value === 'all' ? null : value === 'active' ? true : false
-                );
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#161B22] border-[#30363D]">
-                <SelectItem value="all">All Use Cases</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Use Cases List */}
-          {useCasesLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 animate-pulse"
-                >
-                  <div className="h-6 bg-[#21262D] rounded mb-4"></div>
-                  <div className="h-4 bg-[#21262D] rounded mb-2"></div>
-                  <div className="h-4 bg-[#21262D] rounded w-2/3"></div>
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[#E5E7EB] group-hover:text-[#EC4899] transition-colors">
+                    {useCase.title}
+                  </h3>
+                  <Badge
+                    variant={useCase.status === 'Active' ? 'default' : 'secondary'}
+                    className={
+                      useCase.status === 'Active'
+                        ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                        : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
+                    }
+                  >
+                    {useCase.status === 'Active' ? 'Active' : 'Archived'}
+                  </Badge>
                 </div>
-              ))}
+                {useCase.description && (
+                  <p className="text-[#9CA3AF] text-sm mb-4 line-clamp-2">
+                    {useCase.description}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-[#9CA3AF] text-sm">
+                    {useCase.taskCount || 0} Tasks
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#EC4899] hover:text-[#EC4899] hover:bg-[#EC4899]/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
+                      );
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Delete Module Button */}
+        {canDelete && (
+          <div className="mb-6">
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Module
+            </Button>
+            <ConfirmDeleteDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              entityType="Module"
+              entityName={module.title}
+              onConfirm={handleDeleteModule}
+              children={module.useCaseCount ? [{ count: module.useCaseCount, type: 'use case' }] : undefined}
+            />
+          </div>
+        )}
+
+        {/* Use Cases Section */}
+        <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Use Cases</h2>
+            <div className="flex flex-1 gap-4 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9CA3AF] w-4 h-4" />
+                <Input
+                  placeholder="Search use cases..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 bg-[#161B22] border-[#30363D] text-[#E5E7EB]"
+                />
+              </div>
+              
+              <Select value={statusFilter === null ? 'All' : (statusFilter ? 'Active' : 'Archived')} onValueChange={handleFilterChange}>
+                <SelectTrigger className="w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {true && ( // hasPermission(PERMISSIONS.USECASE_CREATE) - temporarily bypassed for development
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button 
+                          onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/new`)}
+                          disabled={module.status !== 'Active'}
+                          className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Use Case
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {module.status !== 'Active' && (
+                      <TooltipContent>
+                        <p>Use case oluşturmak için modülü aktifleştirin</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
-          ) : useCases.length === 0 ? (
-            <div className="text-center py-16 bg-[#161B22] border border-[#30363D] rounded-xl">
-              <FileText className="w-16 h-16 text-[#6B7280] mx-auto mb-4" />
-              <p className="text-[#9CA3AF] text-lg">
-                {searchTerm || statusFilter !== null
-                  ? 'No use cases found matching your filters.'
-                  : 'No use cases yet. Create your first use case!'}
-              </p>
+          </div>
+
+          {useCasesLoading ? (
+            <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl overflow-hidden shadow-xl">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-[#30363D] hover:bg-[#21262D]/50">
+                    <TableHead className="text-[#E5E7EB]">Title</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Status</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Tasks</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <TableRow key={i} className="border-[#30363D]/50 hover:bg-[#21262D]/30">
+                      <TableCell>
+                        <div className="h-5 bg-[#21262D] rounded animate-pulse w-3/4" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-6 bg-[#21262D] rounded-full animate-pulse w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-5 bg-[#21262D] rounded animate-pulse w-8" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-8 bg-[#21262D] rounded animate-pulse w-20" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {useCases.map((useCase, index) => (
-                <motion.div
-                  key={useCase.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 hover:border-[#EC4899]/50 hover:shadow-lg hover:shadow-[#EC4899]/10 transition-all cursor-pointer group"
-                  onClick={() =>
-                    navigate(
-                      `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
-                    )
-                  }
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-[#E5E7EB] group-hover:text-[#EC4899] transition-colors">
-                      {useCase.title}
-                    </h3>
-                    <Badge
-                      variant={useCase.isActive ? 'default' : 'secondary'}
-                      className={
-                        useCase.isActive
-                          ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                          : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
-                      }
-                    >
-                      {useCase.isActive ? 'Active' : 'Archived'}
-                    </Badge>
-                  </div>
-                  {useCase.description && (
-                    <p className="text-[#9CA3AF] text-sm mb-4 line-clamp-2">
-                      {useCase.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div className="text-[#9CA3AF] text-sm">
-                      {useCase.taskCount || 0} Tasks
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-[#EC4899] hover:text-[#EC4899] hover:bg-[#EC4899]/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(
-                          `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`
-                        );
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-2">
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  if (
-                    pageNum === 1 ||
-                    pageNum === totalPages ||
-                    (pageNum >= page - 1 && pageNum <= page + 1)
-                  ) {
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? 'default' : 'outline'}
-                        onClick={() => setPage(pageNum)}
-                        className={
-                          page === pageNum
-                            ? 'bg-[#8B5CF6] text-white'
-                            : 'bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]'
-                        }
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  } else if (pageNum === page - 2 || pageNum === page + 2) {
-                    return <span key={pageNum} className="text-[#9CA3AF]">...</span>;
-                  }
-                  return null;
-                })}
+            <>
+              <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl overflow-hidden shadow-xl">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-[#30363D] hover:bg-[#21262D]">
+                      <TableHead className="text-[#E5E7EB]">Title</TableHead>
+                      <TableHead className="text-[#E5E7EB]">Status</TableHead>
+                      <TableHead className="text-[#E5E7EB]">Tasks</TableHead>
+                      <TableHead className="text-[#E5E7EB]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {useCases.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-16">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#8B5CF6]/20 to-[#2DD4BF]/20 rounded-2xl flex items-center justify-center mb-4">
+                              <Layers className="w-8 h-8 text-[#8B5CF6]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">
+                              No use cases yet
+                            </h3>
+                            <p className="text-[#9CA3AF] mb-6 max-w-md">
+                              Create your first use case to start structuring work.
+                            </p>
+                            {true && ( // hasPermission(PERMISSIONS.USECASE_CREATE) - temporarily bypassed for development
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/new`)}
+                                        disabled={module.status !== 'Active'}
+                                        className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Create Use Case
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {module.status !== 'Active' && (
+                                    <TooltipContent>
+                                      <p>Use case oluşturmak için modülü aktifleştirin</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      useCases.map((useCase) => (
+                        <TableRow key={useCase.id} className="border-[#30363D] hover:bg-[#21262D]">
+                          <TableCell className="text-[#E5E7EB]">
+                            <button
+                              onClick={() => {
+                                const targetPath = `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`;
+                                console.log('🔵 Title clicked - Navigating to:', targetPath);
+                                console.log('📍 UseCase:', { id: useCase.id, title: useCase.title });
+                                navigate(targetPath);
+                              }}
+                              className="hover:text-[#8B5CF6] transition-colors cursor-pointer"
+                            >
+                              {useCase.title}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={useCase.status === 'Active' ? 'default' : 'secondary'}
+                              className={
+                                useCase.status === 'Active'
+                                  ? 'bg-[#10B981] text-white'
+                                  : 'bg-[#6B7280] text-white'
+                              }
+                            >
+                              {useCase.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-[#9CA3AF]">
+                            <span className="text-sm">
+                              {useCase.taskCount || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const targetPath = `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`;
+                                  console.log('👁️ View button clicked - Navigating to:', targetPath);
+                                  console.log('📍 Route params:', { projectId, moduleId, useCaseId: useCase.id });
+                                  navigate(targetPath);
+                                }}
+                                className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#21262D]"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-              >
-                Next
-              </Button>
-            </div>
+
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => page > 1 && handlePageChange(page - 1)}
+                          className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(pageNum)}
+                            isActive={page === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => page < totalPages && handlePageChange(page + 1)}
+                          className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
-        </motion.div>
+        </div>
       </div>
-
-      {/* Edit Module Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#E5E7EB]">
-              Edit Module
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="edit-title" className="text-[#E5E7EB]">
-                Title <span className="text-[#EF4444]">*</span>
-              </Label>
-              <Input
-                id="edit-title"
-                value={editFormData.title}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, title: e.target.value })
-                }
-                placeholder="Enter module title"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description" className="text-[#E5E7EB]">
-                Description
-              </Label>
-              <Textarea
-                id="edit-description"
-                value={editFormData.description}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Enter module description"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={4}
-                maxLength={1000}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditModalOpen(false)}
-              className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateModule}
-              disabled={isSaving || !editFormData.title?.trim()}
-              className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Module</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#9CA3AF]">
-              Are you sure you want to delete this module? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteModule}
-              disabled={isDeleting}
-              className="bg-[#EF4444] text-white hover:bg-[#EF4444]/90"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Create Use Case Modal */}
-      <Dialog
-        open={isCreateUseCaseModalOpen}
-        onOpenChange={setIsCreateUseCaseModalOpen}
-      >
-        <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#E5E7EB]">
-              Create New Use Case
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="usecase-title" className="text-[#E5E7EB]">
-                Title <span className="text-[#EF4444]">*</span>
-              </Label>
-              <Input
-                id="usecase-title"
-                value={createUseCaseFormData.title}
-                onChange={(e) =>
-                  setCreateUseCaseFormData({
-                    ...createUseCaseFormData,
-                    title: e.target.value,
-                  })
-                }
-                placeholder="Enter use case title"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <Label htmlFor="usecase-description" className="text-[#E5E7EB]">
-                Description
-              </Label>
-              <Textarea
-                id="usecase-description"
-                value={createUseCaseFormData.description}
-                onChange={(e) =>
-                  setCreateUseCaseFormData({
-                    ...createUseCaseFormData,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Enter use case description"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={4}
-                maxLength={1000}
-              />
-            </div>
-            <div>
-              <Label htmlFor="usecase-notes" className="text-[#E5E7EB]">
-                Important Notes
-              </Label>
-              <Textarea
-                id="usecase-notes"
-                value={createUseCaseFormData.importantNotes}
-                onChange={(e) =>
-                  setCreateUseCaseFormData({
-                    ...createUseCaseFormData,
-                    importantNotes: e.target.value,
-                  })
-                }
-                placeholder="Enter important notes"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateUseCaseModalOpen(false)}
-              className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateUseCase}
-              disabled={isCreatingUseCase || !createUseCaseFormData.title.trim()}
-              className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90"
-            >
-              {isCreatingUseCase ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

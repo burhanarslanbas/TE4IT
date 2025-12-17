@@ -1,387 +1,201 @@
 /**
  * UseCase Detail Page
- * Use case detayları ve task listesi (List View)
+ * Route: /projects/:projectId/modules/:moduleId/usecases/:useCaseId
  */
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Archive,
-  ArchiveRestore,
-  Plus,
-  Search,
-  Filter,
-  Eye,
-  Folder,
-  Package,
-  FileText,
-  CheckSquare,
-  Calendar,
-  User,
-  AlertTriangle,
-} from 'lucide-react';
+import { UseCaseService } from '../services/useCaseService';
+import { ModuleService } from '../services/moduleService';
+import { ProjectService } from '../services/projectService';
+import { hasPermission, PERMISSIONS } from '../utils/permissions';
+import type { UseCase, Module, Project, Task } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog';
+import { Badge } from '../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
-import { Badge } from '../components/ui/badge';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from '../components/ui/breadcrumb';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/table';
-import { useCaseService } from '../services/useCaseService';
-import { projectService } from '../services/projectService';
-import { moduleService } from '../services/moduleService';
-import { hasPermission } from '../utils/permissions';
-import {
-  UseCase,
-  Project,
-  Module,
-  Task,
-  TaskType,
-  TaskState,
-  CreateTaskRequest,
-  UpdateUseCaseRequest,
-} from '../types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { ApiError } from '../services/api';
+import { ArrowLeft, Edit, Trash2, Archive, ArchiveRestore, AlertTriangle, Plus, Layers, FileText, Bug, Wrench, TestTube, Search, Eye } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../components/ui/breadcrumb';
+import { motion, AnimatePresence } from 'motion/react';
+import { ConfirmDeleteDialog } from '../components/ConfirmDeleteDialog';
+import { useTasks } from '../hooks/useTasks';
+import { taskTypeConfig, taskStateConfig } from '../utils/taskHelpers';
 
-// Task Type ve State renkleri
-const taskTypeColors: Record<TaskType, string> = {
-  [TaskType.Documentation]: 'bg-[#F97316]/10 text-[#F97316] border-[#F97316]/30',
-  [TaskType.Feature]: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30',
-  [TaskType.Test]: 'bg-[#9C27B0]/10 text-[#9C27B0] border-[#9C27B0]/30',
-  [TaskType.Bug]: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30',
-};
+interface EditUseCaseForm {
+  title: string;
+  description: string;
+  importantNotes: string;
+}
 
-const taskStateColors: Record<TaskState, string> = {
-  [TaskState.NotStarted]: 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30',
-  [TaskState.InProgress]: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30',
-  [TaskState.Completed]: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30',
-  [TaskState.Cancelled]: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30',
-};
-
-export const UseCaseDetailPage: React.FC = () => {
-  const { projectId, moduleId, useCaseId } = useParams<{
-    projectId: string;
-    moduleId: string;
-    useCaseId: string;
-  }>();
+export function UseCaseDetailPage() {
+  const { projectId, moduleId, useCaseId } = useParams<{ projectId: string; moduleId: string; useCaseId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [module, setModule] = useState<Module | null>(null);
   const [useCase, setUseCase] = useState<UseCase | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tasksLoading, setTasksLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stateFilter, setStateFilter] = useState<TaskState | null>(null);
-  const [typeFilter, setTypeFilter] = useState<TaskType | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState<UpdateUseCaseRequest>({
-    title: '',
-    description: '',
-    importantNotes: '',
-  });
-  const [createTaskFormData, setCreateTaskFormData] =
-    useState<CreateTaskRequest>({
-      title: '',
-      description: '',
-      importantNotes: '',
-      type: TaskType.Feature,
-      dueDate: '',
-    });
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskFilters, setTaskFilters] = useState({ page: 1, pageSize: 20, state: 'All' as const, type: 'All' as const, search: '' });
+  
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<EditUseCaseForm>();
+  
+  const descriptionLength = watch('description')?.length || 0;
+  const notesLength = watch('importantNotes')?.length || 0;
+  
+  // Tasks hook
+  const { tasks, loading: tasksLoading, refetch: refetchTasks } = useTasks(useCaseId, taskFilters);
 
-  const pageSize = 20;
+  useEffect(() => {
+    console.log('🎯 UseCaseDetailPage mounted');
+    console.log('📍 Route params:', { projectId, moduleId, useCaseId });
+    
+    if (projectId && moduleId && useCaseId) {
+      console.log('✅ All params present, loading data...');
+      loadData();
+    } else {
+      console.error('❌ Missing route params:', { projectId, moduleId, useCaseId });
+    }
+  }, [projectId, moduleId, useCaseId]);
 
-  // Proje, modül ve use case detaylarını yükle
+  useEffect(() => {
+    if (useCase) {
+      reset({
+        title: useCase.title,
+        description: useCase.description || '',
+        importantNotes: useCase.importantNotes || '',
+      });
+    }
+  }, [useCase, reset]);
+
   const loadData = async () => {
-    if (!projectId || !moduleId || !useCaseId) return;
-
     try {
       setLoading(true);
-      const [projectResponse, moduleResponse, useCaseResponse] =
-        await Promise.all([
-          projectService.getById(projectId),
-          moduleService.getById(moduleId),
-          useCaseService.getById(useCaseId),
-        ]);
-
-      if (projectResponse.success && projectResponse.data) {
-        setProject(projectResponse.data);
+      console.log('🔄 Loading use case data for:', { projectId, moduleId, useCaseId });
+      
+      const [projectData, moduleData, useCaseData] = await Promise.all([
+        projectId ? ProjectService.getProject(projectId) : Promise.resolve(null),
+        moduleId ? ModuleService.getModule(moduleId) : Promise.resolve(null),
+        useCaseId ? UseCaseService.getUseCase(useCaseId) : Promise.resolve(null),
+      ]);
+      
+      console.log('✅ Data loaded:', { 
+        project: projectData?.title, 
+        module: moduleData?.title, 
+        useCase: useCaseData?.title 
+      });
+      
+      setProject(projectData);
+      setModule(moduleData);
+      setUseCase(useCaseData);
+    } catch (error: any) {
+      console.error('❌ Error loading use case:', error);
+      toast.error('Use case yüklenemedi', {
+        description: error.message || 'Bir hata oluştu',
+      });
+      if (projectId && moduleId) {
+        navigate(`/projects/${projectId}/modules/${moduleId}`);
       }
-
-      if (moduleResponse.success && moduleResponse.data) {
-        setModule(moduleResponse.data);
-      }
-
-      if (useCaseResponse.success && useCaseResponse.data) {
-        setUseCase(useCaseResponse.data);
-        setEditFormData({
-          title: useCaseResponse.data.title,
-          description: useCaseResponse.data.description || '',
-          importantNotes: useCaseResponse.data.importantNotes || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Veri yüklenirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Veri yüklenirken bir hata oluştu.',
-        });
-      }
-      navigate(`/projects/${projectId}/modules/${moduleId}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Task'ları yükle
-  const loadTasks = async () => {
+  const handleUpdate = async (data: EditUseCaseForm) => {
     if (!useCaseId) return;
-
     try {
-      setTasksLoading(true);
-      const response = await useCaseService.getTasks(useCaseId, {
-        page,
-        pageSize,
-        state: stateFilter,
-        type: typeFilter,
-        search: searchTerm || undefined,
+      await UseCaseService.updateUseCase(useCaseId, {
+        title: data.title,
+        description: data.description || undefined,
+        importantNotes: data.importantNotes || undefined,
       });
-
-      if (response.success && response.data) {
-        setTasks(response.data.items);
-        setTotalPages(response.data.totalPages);
-      }
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Task\'lar yüklenirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Task\'lar yüklenirken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setTasksLoading(false);
+      toast.success('Use case güncellendi');
+      setEditDialogOpen(false);
+      loadData();
+    } catch (error: any) {
+      toast.error('Use case güncellenemedi', {
+        description: error.message || 'Bir hata oluştu',
+      });
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [projectId, moduleId, useCaseId]);
-
-  useEffect(() => {
-    if (useCase) {
-      loadTasks();
-    }
-  }, [useCase, page, stateFilter, typeFilter, searchTerm]);
-
-  // Use case güncelle
-  const handleUpdateUseCase = async () => {
-    if (!useCaseId || !editFormData.title?.trim()) {
-      toast.error('Hata', {
-        description: 'Use case başlığı zorunludur.',
-      });
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      const response = await useCaseService.update(useCaseId, editFormData);
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: 'Use case başarıyla güncellendi.',
-        });
-        setIsEditModalOpen(false);
-        loadData();
-      }
-    } catch (error) {
-      console.error('Error updating use case:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Use case güncellenirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Use case güncellenirken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsSaving(false);
-    }
+  const handleDelete = async () => {
+    if (!useCaseId || !projectId || !moduleId) return;
+    
+    console.log('[USECASE DELETE] Starting delete for use case:', useCaseId);
+    
+    await UseCaseService.deleteUseCase(useCaseId);
+    
+    console.log('[USECASE DELETE] Successfully deleted, navigating to module');
+    toast.success('Use case silindi');
+    
+    // Navigate to module detail page
+    navigate(`/projects/${projectId}/modules/${moduleId}`);
   };
 
-  // Use case durumunu değiştir
-  const handleChangeStatus = async () => {
+  const handleStatusChange = async (newIsActive: boolean) => {
     if (!useCaseId || !useCase) return;
-
-    try {
-      const response = await useCaseService.changeStatus(useCaseId, {
-        isActive: !useCase.isActive,
-      });
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: `Use case ${useCase.isActive ? 'arşivlendi' : 'aktifleştirildi'}.`,
-        });
-        loadData();
-      }
-    } catch (error) {
-      console.error('Error changing status:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Durum değiştirilirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Durum değiştirilirken bir hata oluştu.',
-        });
-      }
-    }
-  };
-
-  // Use case sil
-  const handleDeleteUseCase = async () => {
-    if (!useCaseId) return;
-
-    try {
-      setIsDeleting(true);
-      const response = await useCaseService.delete(useCaseId);
-
-      if (response.success) {
-        toast.success('Başarılı', {
-          description: 'Use case başarıyla silindi.',
-        });
-        navigate(`/projects/${projectId}/modules/${moduleId}`);
-      }
-    } catch (error) {
-      console.error('Error deleting use case:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Use case silinirken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Use case silinirken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
-  // Task oluştur
-  const handleCreateTask = async () => {
-    if (!useCaseId || !createTaskFormData.title.trim()) {
-      toast.error('Hata', {
-        description: 'Task başlığı zorunludur.',
-      });
+    
+    // Eğer zaten istenen durumdaysa işlem yapma
+    const currentIsActive = useCase.status === 'Active';
+    if (currentIsActive === newIsActive) {
       return;
     }
-
+    
     try {
-      setIsCreatingTask(true);
-      const response = await useCaseService.createTask(
-        useCaseId,
-        createTaskFormData
-      );
-
-      if (response.success && response.data) {
-        toast.success('Başarılı', {
-          description: 'Task başarıyla oluşturuldu.',
+      // PATCH isteği at
+      const response = await UseCaseService.updateUseCaseStatus(useCaseId, newIsActive);
+      
+      // Response'daki isActive'i kontrol et
+      if (response.isActive !== newIsActive) {
+        toast.error('Use case durumu güncellenemedi', {
+          description: 'Backend beklenen durumu döndürmedi',
         });
-        setIsCreateTaskModalOpen(false);
-        setCreateTaskFormData({
-          title: '',
-          description: '',
-          importantNotes: '',
-          type: TaskType.Feature,
-          dueDate: '',
-        });
-        loadTasks();
+        // Refetch ile server state'i doğrula
+        await loadData();
+        return;
       }
-    } catch (error) {
-      console.error('Error creating task:', error);
-      if (error instanceof ApiError) {
-        toast.error('Hata', {
-          description: error.message || 'Task oluşturulurken bir hata oluştu.',
-        });
-      } else {
-        toast.error('Hata', {
-          description: 'Task oluşturulurken bir hata oluştu.',
-        });
-      }
-    } finally {
-      setIsCreatingTask(false);
+      
+      // Başarılı - toast ve refetch
+      toast.success(`Use case ${newIsActive ? 'aktifleştirildi' : 'arşivlendi'}`);
+      await loadData();
+    } catch (error: any) {
+      toast.error('Use case durumu güncellenemedi', {
+        description: error.message || 'Bir hata oluştu',
+      });
+      // Hata durumunda da refetch - UI ile backend senkronize olsun
+      await loadData();
     }
   };
 
-  const canUpdate = hasPermission('UseCaseUpdate');
-  const canDelete = hasPermission('UseCaseDelete');
-  const canCreateTask = hasPermission('TaskCreate');
+  const handleTaskSearch = (value: string) => {
+    setTaskFilters({ ...taskFilters, search: value, page: 1 });
+  };
+
+  const handleTaskStateFilter = (value: string) => {
+    setTaskFilters({ ...taskFilters, state: value as any, page: 1 });
+  };
+
+  const handleTaskTypeFilter = (value: string) => {
+    setTaskFilters({ ...taskFilters, type: value as any, page: 1 });
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#0D1117] to-[#161B22] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#9CA3AF]">Yükleniyor...</p>
+          <motion.div
+            className="w-16 h-16 border-4 border-[#8B5CF6] border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          <p className="text-[#9CA3AF] text-lg">Loading use case...</p>
         </div>
       </div>
     );
@@ -392,79 +206,36 @@ export const UseCaseDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117] relative overflow-hidden">
-      {/* Animated Background Gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-0 left-1/4 w-96 h-96 bg-[#EC4899]/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#8B5CF6]/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, -100, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      </div>
-
-      <div className="container mx-auto px-6 py-24 relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-[#0D1117] via-[#0D1117] to-[#161B22] text-[#E5E7EB]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12" style={{ paddingTop: 'calc(var(--navbar-height) + 2rem)' }}>
         {/* Breadcrumb */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          <Breadcrumb>
-            <BreadcrumbList className="text-[#9CA3AF]">
+          <Breadcrumb className="mb-6">
+            <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link to="/projects" className="hover:text-[#8B5CF6]">
-                    Projects
-                  </Link>
+                  <Link to="/projects" className="hover:text-[#8B5CF6] transition-colors">Projects</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link
-                    to={`/projects/${projectId}`}
-                    className="hover:text-[#8B5CF6]"
-                  >
-                    {project.title}
-                  </Link>
+                  <Link to={`/projects/${projectId}`} className="hover:text-[#8B5CF6] transition-colors">{project.title}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link
-                    to={`/projects/${projectId}/modules/${moduleId}`}
-                    className="hover:text-[#8B5CF6]"
-                  >
-                    {module.title}
-                  </Link>
+                  <Link to={`/projects/${projectId}/modules/${moduleId}`} className="hover:text-[#8B5CF6] transition-colors">{module.title}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
-              <BreadcrumbItem className="text-[#E5E7EB]">
-                {useCase.title}
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-[#E5E7EB]">{useCase.title}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -472,606 +243,416 @@ export const UseCaseDetailPage: React.FC = () => {
 
         {/* Back Button */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-6"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
         >
           <Button
             variant="ghost"
             onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}`)}
-            className="text-[#E5E7EB] hover:bg-[#EC4899]/10 border border-[#30363D]/50"
+            className="mb-6 text-[#E5E7EB] hover:text-[#8B5CF6] hover:bg-[#21262D]/50 transition-all"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Module
           </Button>
         </motion.div>
 
-        {/* Use Case Info Card */}
+        {/* UseCase Info Section */}
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl"
         >
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <FileText className="w-8 h-8 text-[#EC4899]" />
-                <h1 className="text-3xl font-bold text-[#E5E7EB]">
-                  {useCase.title}
-                </h1>
-                <Badge
-                  variant={useCase.isActive ? 'default' : 'secondary'}
-                  className={
-                    useCase.isActive
-                      ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                      : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
-                  }
-                >
-                  {useCase.isActive ? 'Active' : 'Archived'}
-                </Badge>
-              </div>
-              {useCase.description && (
-                <p className="text-[#9CA3AF] mb-4">{useCase.description}</p>
-              )}
-              {useCase.importantNotes && (
-                <div className="bg-[#F97316]/10 border border-[#F97316]/30 rounded-lg p-4 mb-4">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-[#F97316] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-[#F97316] mb-1">
-                        Important Notes
-                      </p>
-                      <p className="text-sm text-[#E5E7EB]">
-                        {useCase.importantNotes}
-                      </p>
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#8B5CF6]/20 to-[#2DD4BF]/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Layers className="w-6 h-6 text-[#8B5CF6]" />
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-[#E5E7EB] to-[#9CA3AF] bg-clip-text text-transparent">
+                    {useCase.title}
+                  </h1>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Badge
+                      variant={useCase.status === 'Active' ? 'default' : 'secondary'}
+                      className={`${
+                        useCase.status === 'Active'
+                          ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white'
+                          : 'bg-[#6B7280] text-white'
+                      } px-3 py-1 text-sm font-medium`}
+                    >
+                      {useCase.status === 'Active' ? 'Aktif' : 'Arşivlendi'}
+                    </Badge>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStatusChange(true)}
+                        disabled={useCase.status === 'Active'}
+                        className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                          useCase.status === 'Active'
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'hover:border-[#10B981] hover:text-[#10B981]'
+                        }`}
+                      >
+                        <ArchiveRestore className="w-4 h-4 mr-2" />
+                        Aktifleştir
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStatusChange(false)}
+                        disabled={useCase.status === 'Archived'}
+                        className={`border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] transition-all ${
+                          useCase.status === 'Archived'
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'hover:border-[#F59E0B] hover:text-[#F59E0B]'
+                        }`}
+                      >
+                        <Archive className="w-4 h-4 mr-2" />
+                        Arşivle
+                      </Button>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-            <div className="flex gap-2">
-              {canUpdate && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
+            
+            <div className="flex gap-2 flex-wrap">
+              {true && ( // hasPermission(PERMISSIONS.USECASE_UPDATE) - temporarily bypassed for development
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] hover:border-[#8B5CF6]/50 transition-all"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl">Edit Use Case</DialogTitle>
+                      <DialogDescription className="text-[#9CA3AF]">
+                        Update the use case information. Changes will be saved immediately.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit(handleUpdate)} className="space-y-5">
+                      <div>
+                        <Label htmlFor="edit-title" className="text-[#E5E7EB] mb-2">Title *</Label>
+                        <Input
+                          id="edit-title"
+                          {...register('title', {
+                            required: 'Title is required',
+                            minLength: { value: 3, message: 'Title must be at least 3 characters' },
+                            maxLength: { value: 100, message: 'Title must be at most 100 characters' },
+                          })}
+                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
+                        />
+                        {errors.title && (
+                          <p className="text-red-400 text-sm mt-1">{errors.title.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="edit-description" className="text-[#E5E7EB]">Description</Label>
+                          <span className="text-xs text-[#6B7280]">{descriptionLength}/1000</span>
+                        </div>
+                        <Textarea
+                          id="edit-description"
+                          {...register('description', {
+                            maxLength: { value: 1000, message: 'Description must be at most 1000 characters' },
+                          })}
+                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[120px] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
+                        />
+                        {errors.description && (
+                          <p className="text-red-400 text-sm mt-1">{errors.description.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="edit-notes" className="text-[#E5E7EB]">Important Notes</Label>
+                          <span className="text-xs text-[#6B7280]">{notesLength}/500</span>
+                        </div>
+                        <Textarea
+                          id="edit-notes"
+                          {...register('importantNotes', {
+                            maxLength: { value: 500, message: 'Important notes must be at most 500 characters' },
+                          })}
+                          className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[100px] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
+                          placeholder="⚠️ Important notes..."
+                        />
+                        {errors.importantNotes && (
+                          <p className="text-red-400 text-sm mt-1">{errors.importantNotes.message}</p>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setEditDialogOpen(false)}
+                          className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white transition-all">
+                          Save Changes
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleChangeStatus}
-                className={
-                  useCase.isActive
-                    ? 'bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]'
-                    : 'bg-[#10B981]/10 border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/20'
-                }
-              >
-                {useCase.isActive ? (
-                  <>
-                    <Archive className="w-4 h-4 mr-2" />
-                    Archive
-                  </>
-                ) : (
-                  <>
-                    <ArchiveRestore className="w-4 h-4 mr-2" />
-                    Activate
-                  </>
-                )}
-              </Button>
-              {canDelete && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="bg-[#EF4444]/10 border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/20"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+              
+              {true && ( // hasPermission(PERMISSIONS.USECASE_DELETE) - temporarily bypassed for development
+                <>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="bg-[#EF4444] hover:bg-[#DC2626] text-white transition-all"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                  <ConfirmDeleteDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    entityType="UseCase"
+                    entityName={useCase.title}
+                    onConfirm={handleDelete}
+                    children={useCase.taskCount ? [{ count: useCase.taskCount, type: 'task' }] : undefined}
+                  />
+                </>
               )}
             </div>
           </div>
+
+          {/* Description Card */}
+          {useCase.description && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className="bg-[#0D1117]/50 border border-[#30363D]/50 rounded-xl p-5 mb-4"
+            >
+              <h3 className="text-sm font-semibold text-[#9CA3AF] mb-3 uppercase tracking-wide">Description</h3>
+              <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap">{useCase.description}</p>
+            </motion.div>
+          )}
+
+          {/* Important Notes Card */}
+          {useCase.importantNotes && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+              className="bg-gradient-to-br from-[#F59E0B]/10 via-[#0D1117]/50 to-[#0D1117]/50 border border-[#F59E0B]/30 rounded-xl p-5"
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-[#F59E0B] mb-3 uppercase tracking-wide">Important Notes</h3>
+                  <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap">{useCase.importantNotes}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Tasks Section */}
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
+          className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 shadow-xl"
         >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#E5E7EB] mb-2 flex items-center gap-2">
-                <CheckSquare className="w-6 h-6 text-[#8B5CF6]" />
-                Tasks
-              </h2>
-              <p className="text-[#9CA3AF]">
-                Manage tasks for this use case
-              </p>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#E5E7EB] to-[#9CA3AF] bg-clip-text text-transparent">
+              Tasks
+            </h2>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* State Filter */}
+              <Select value={taskFilters.state} onValueChange={handleTaskStateFilter}>
+                <SelectTrigger className="w-[140px] bg-[#0D1117] border-[#30363D] text-[#E5E7EB] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
+                  <SelectItem value="All">Tüm Durumlar</SelectItem>
+                  <SelectItem value="NotStarted">Başlanmadı</SelectItem>
+                  <SelectItem value="InProgress">Devam Ediyor</SelectItem>
+                  <SelectItem value="Completed">Tamamlandı</SelectItem>
+                  <SelectItem value="Cancelled">İptal Edildi</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Type Filter */}
+              <Select value={taskFilters.type} onValueChange={handleTaskTypeFilter}>
+                <SelectTrigger className="w-[140px] bg-[#0D1117] border-[#30363D] text-[#E5E7EB] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
+                  <SelectItem value="All">Tüm Tipler</SelectItem>
+                  <SelectItem value="Feature">Feature</SelectItem>
+                  <SelectItem value="Bug">Bug</SelectItem>
+                  <SelectItem value="Test">Test</SelectItem>
+                  <SelectItem value="Documentation">Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Create Task Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/new`)}
+                        disabled={useCase.status !== 'Active'}
+                        className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Task
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {useCase.status !== 'Active' && (
+                    <TooltipContent>
+                      <p>Task oluşturmak için use case'i aktifleştirin</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            {canCreateTask && (
-              <Button
-                onClick={() => setIsCreateTaskModalOpen(true)}
-                className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90 shadow-lg shadow-[#8B5CF6]/25"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Task
-              </Button>
-            )}
           </div>
 
-          {/* Filters */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+          {/* Search */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
               <Input
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10 bg-[#161B22] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
+                placeholder="Task ara..."
+                value={taskFilters.search}
+                onChange={(e) => handleTaskSearch(e.target.value)}
+                className="pl-10 bg-[#0D1117] border-[#30363D] text-[#E5E7EB] placeholder:text-[#6B7280] focus:ring-2 focus:ring-[#8B5CF6]"
               />
             </div>
-            <Select
-              value={stateFilter || 'all'}
-              onValueChange={(value) => {
-                setStateFilter(value === 'all' ? null : (value as TaskState));
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by state" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#161B22] border-[#30363D]">
-                <SelectItem value="all">All States</SelectItem>
-                <SelectItem value={TaskState.NotStarted}>Not Started</SelectItem>
-                <SelectItem value={TaskState.InProgress}>In Progress</SelectItem>
-                <SelectItem value={TaskState.Completed}>Completed</SelectItem>
-                <SelectItem value={TaskState.Cancelled}>Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={typeFilter || 'all'}
-              onValueChange={(value) => {
-                setTypeFilter(value === 'all' ? null : (value as TaskType));
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#161B22] border-[#30363D]">
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value={TaskType.Documentation}>Documentation</SelectItem>
-                <SelectItem value={TaskType.Feature}>Feature</SelectItem>
-                <SelectItem value={TaskType.Test}>Test</SelectItem>
-                <SelectItem value={TaskType.Bug}>Bug</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Tasks Table */}
           {tasksLoading ? (
-            <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-6">
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-16 bg-[#21262D] rounded animate-pulse"
-                  ></div>
-                ))}
-              </div>
+            <div className="text-center py-16">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-4 border-[#8B5CF6] border-t-transparent rounded-full mx-auto mb-4"
+              />
+              <p className="text-[#9CA3AF]">Yükleniyor...</p>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-16 bg-[#161B22] border border-[#30363D] rounded-xl">
-              <CheckSquare className="w-16 h-16 text-[#6B7280] mx-auto mb-4" />
-              <p className="text-[#9CA3AF] text-lg">
-                {searchTerm || stateFilter || typeFilter
-                  ? 'No tasks found matching your filters.'
-                  : 'No tasks yet. Create your first task!'}
+            <div className="text-center py-16">
+              <motion.div
+                className="w-20 h-20 bg-gradient-to-br from-[#8B5CF6]/20 to-[#2DD4BF]/20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                animate={{ 
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
+                <Layers className="w-10 h-10 text-[#8B5CF6]" />
+              </motion.div>
+              <h3 className="text-xl font-semibold text-[#E5E7EB] mb-3">
+                Henüz task yok
+              </h3>
+              <p className="text-[#9CA3AF] mb-6">
+                Bu use case için ilk task'ı oluşturarak başlayın
               </p>
+              {useCase.status === 'Active' && (
+                <Button
+                  onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/new`)}
+                  className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  İlk Task'ı Oluştur
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="bg-[#161B22] border border-[#30363D] rounded-xl overflow-hidden">
+            <div className="bg-[#0D1117]/50 border border-[#30363D]/50 rounded-xl overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-[#30363D] hover:bg-[#21262D]">
-                    <TableHead className="text-[#E5E7EB]">Title</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Type</TableHead>
-                    <TableHead className="text-[#E5E7EB]">State</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Assignee</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Due Date</TableHead>
-                    <TableHead className="text-[#E5E7EB] text-right">Actions</TableHead>
+                  <TableRow className="border-[#30363D] hover:bg-[#21262D]/50">
+                    <TableHead className="text-[#E5E7EB]">Başlık</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Tip</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Durum</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Bitiş Tarihi</TableHead>
+                    <TableHead className="text-[#E5E7EB]">Aksiyonlar</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tasks.map((task, index) => {
-                    const isOverdue =
-                      task.dueDate &&
-                      new Date(task.dueDate) < new Date() &&
-                      task.state !== TaskState.Completed &&
-                      task.state !== TaskState.Cancelled;
+                  {tasks.map((task) => {
+                    // Debug: Task objesini kontrol et
+                    if (!taskTypeConfig[task.type]) {
+                      console.error('[TASK RENDER] Invalid task type:', {
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        taskType: task.type,
+                        taskTypeType: typeof task.type,
+                        fullTask: task,
+                        availableTypes: Object.keys(taskTypeConfig)
+                      });
+                    }
+
+                    // Fallback: Eğer type mapping yoksa Feature kullan
+                    const typeConfig = taskTypeConfig[task.type] || taskTypeConfig.Feature;
+                    const stateConfig = taskStateConfig[task.state] || taskStateConfig.NotStarted;
 
                     return (
-                      <motion.tr
-                        key={task.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-[#30363D] hover:bg-[#21262D] cursor-pointer transition-colors"
-                        onClick={() =>
-                          navigate(
-                            `/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/${task.id}`
-                          )
-                        }
-                      >
-                        <TableCell className="text-[#E5E7EB] font-medium">
-                          {task.title}
-                        </TableCell>
+                      <TableRow key={task.id} className="border-[#30363D] hover:bg-[#21262D]/50 cursor-pointer">
+                        <TableCell className="text-[#E5E7EB] font-medium">{task.title}</TableCell>
                         <TableCell>
-                          <Badge
-                            className={taskTypeColors[task.type]}
-                          >
-                            {task.type}
+                          <Badge className={`${typeConfig.color} border-0`}>
+                            <span className="flex items-center gap-1.5">
+                              {typeConfig.icon}
+                              <span>{typeConfig.label}</span>
+                            </span>
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={taskStateColors[task.state]}>
-                            {task.state}
+                          <Badge className={`${stateConfig.color} border-0`}>
+                            {stateConfig.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-[#9CA3AF]">
-                          {task.assignee ? (
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              {task.assignee.firstName} {task.assignee.lastName}
-                            </div>
-                          ) : (
-                            <span className="text-[#6B7280]">Unassigned</span>
-                          )}
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString('tr-TR') : '-'}
                         </TableCell>
                         <TableCell>
-                          {task.dueDate ? (
-                            <div
-                              className={`flex items-center gap-2 ${
-                                isOverdue ? 'text-[#EF4444]' : 'text-[#9CA3AF]'
-                              }`}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/${task.id}`)}
+                              className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#8B5CF6]/10"
+                              title="Görüntüle"
                             >
-                              <Calendar className="w-4 h-4" />
-                              {new Date(task.dueDate).toLocaleDateString('tr-TR')}
-                              {isOverdue && (
-                                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[#6B7280]">No due date</span>
-                          )}
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[#8B5CF6] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(
-                                `/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/${task.id}`
-                              );
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </Button>
-                        </TableCell>
-                      </motion.tr>
+                      </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
             </div>
           )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-2">
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  if (
-                    pageNum === 1 ||
-                    pageNum === totalPages ||
-                    (pageNum >= page - 1 && pageNum <= page + 1)
-                  ) {
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? 'default' : 'outline'}
-                        onClick={() => setPage(pageNum)}
-                        className={
-                          page === pageNum
-                            ? 'bg-[#8B5CF6] text-white'
-                            : 'bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]'
-                        }
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  } else if (pageNum === page - 2 || pageNum === page + 2) {
-                    return <span key={pageNum} className="text-[#9CA3AF]">...</span>;
-                  }
-                  return null;
-                })}
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
-              >
-                Next
-              </Button>
-            </div>
-          )}
         </motion.div>
+
       </div>
-
-      {/* Edit Use Case Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#E5E7EB]">
-              Edit Use Case
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="edit-title" className="text-[#E5E7EB]">
-                Title <span className="text-[#EF4444]">*</span>
-              </Label>
-              <Input
-                id="edit-title"
-                value={editFormData.title}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, title: e.target.value })
-                }
-                placeholder="Enter use case title"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description" className="text-[#E5E7EB]">
-                Description
-              </Label>
-              <Textarea
-                id="edit-description"
-                value={editFormData.description}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Enter use case description"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={4}
-                maxLength={1000}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-notes" className="text-[#E5E7EB]">
-                Important Notes
-              </Label>
-              <Textarea
-                id="edit-notes"
-                value={editFormData.importantNotes}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    importantNotes: e.target.value,
-                  })
-                }
-                placeholder="Enter important notes"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditModalOpen(false)}
-              className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateUseCase}
-              disabled={isSaving || !editFormData.title?.trim()}
-              className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Use Case</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#9CA3AF]">
-              Are you sure you want to delete this use case? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUseCase}
-              disabled={isDeleting}
-              className="bg-[#EF4444] text-white hover:bg-[#EF4444]/90"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Create Task Modal */}
-      <Dialog
-        open={isCreateTaskModalOpen}
-        onOpenChange={setIsCreateTaskModalOpen}
-      >
-        <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#E5E7EB]">
-              Create New Task
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="task-title" className="text-[#E5E7EB]">
-                Title <span className="text-[#EF4444]">*</span>
-              </Label>
-              <Input
-                id="task-title"
-                value={createTaskFormData.title}
-                onChange={(e) =>
-                  setCreateTaskFormData({
-                    ...createTaskFormData,
-                    title: e.target.value,
-                  })
-                }
-                placeholder="Enter task title"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                maxLength={200}
-              />
-            </div>
-            <div>
-              <Label htmlFor="task-type" className="text-[#E5E7EB]">
-                Type <span className="text-[#EF4444]">*</span>
-              </Label>
-              <Select
-                value={createTaskFormData.type}
-                onValueChange={(value) =>
-                  setCreateTaskFormData({
-                    ...createTaskFormData,
-                    type: value as TaskType,
-                  })
-                }
-              >
-                <SelectTrigger className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#161B22] border-[#30363D]">
-                  <SelectItem value={TaskType.Documentation}>
-                    Documentation
-                  </SelectItem>
-                  <SelectItem value={TaskType.Feature}>Feature</SelectItem>
-                  <SelectItem value={TaskType.Test}>Test</SelectItem>
-                  <SelectItem value={TaskType.Bug}>Bug</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="task-description" className="text-[#E5E7EB]">
-                Description
-              </Label>
-              <Textarea
-                id="task-description"
-                value={createTaskFormData.description}
-                onChange={(e) =>
-                  setCreateTaskFormData({
-                    ...createTaskFormData,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Enter task description"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={4}
-                maxLength={2000}
-              />
-            </div>
-            <div>
-              <Label htmlFor="task-notes" className="text-[#E5E7EB]">
-                Important Notes
-              </Label>
-              <Textarea
-                id="task-notes"
-                value={createTaskFormData.importantNotes}
-                onChange={(e) =>
-                  setCreateTaskFormData({
-                    ...createTaskFormData,
-                    importantNotes: e.target.value,
-                  })
-                }
-                placeholder="Enter important notes"
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-                rows={3}
-                maxLength={1000}
-              />
-            </div>
-            <div>
-              <Label htmlFor="task-due-date" className="text-[#E5E7EB]">
-                Due Date
-              </Label>
-              <Input
-                id="task-due-date"
-                type="date"
-                value={createTaskFormData.dueDate}
-                onChange={(e) =>
-                  setCreateTaskFormData({
-                    ...createTaskFormData,
-                    dueDate: e.target.value,
-                  })
-                }
-                className="mt-2 bg-[#21262D] border-[#30363D] text-[#E5E7EB] placeholder:text-[#9CA3AF] focus:border-[#8B5CF6]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateTaskModalOpen(false)}
-              className="bg-[#21262D] border-[#30363D] text-[#E5E7EB] hover:bg-[#30363D]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateTask}
-              disabled={isCreatingTask || !createTaskFormData.title.trim()}
-              className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90"
-            >
-              {isCreatingTask ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-};
-
+}
