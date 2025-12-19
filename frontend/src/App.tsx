@@ -21,6 +21,7 @@ import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { CreateModulePage } from "./pages/CreateModulePage";
 import { CreateUseCasePage } from "./pages/CreateUseCasePage";
 import { CreateTaskPage } from "./pages/CreateTaskPage";
+import { EditTaskPage } from "./pages/EditTaskPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
@@ -418,6 +419,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <TaskDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Edit Task - Protected Route */}
+          <Route 
+            path="/projects/:projectId/modules/:moduleId/usecases/:useCaseId/tasks/:taskId/edit" 
+            element={
+              <ProtectedRoute>
+                <EditTaskPage />
               </ProtectedRoute>
             } 
           />

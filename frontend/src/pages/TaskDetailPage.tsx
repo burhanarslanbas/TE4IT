@@ -273,6 +273,7 @@ export function TaskDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => navigate(`/projects/${projectId}/modules/${moduleId}/usecases/${useCaseId}/tasks/${taskId}/edit`)}
                 className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] hover:text-[#8B5CF6]"
               >
                 <Edit className="w-4 h-4 mr-2" />
@@ -440,9 +441,9 @@ export function TaskDetailPage() {
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+        entityType="Task"
+        entityName={task.title}
         onConfirm={handleDeleteTask}
-        title="Task'ı Sil"
-        description={`"${task.title}" task'ını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
       />
 
       {/* Add Task Relation Modal */}
