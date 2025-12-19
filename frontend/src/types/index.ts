@@ -111,6 +111,7 @@ export interface Task {
   state: TaskState;
   assigneeId?: string;
   assignee?: User;
+  assigneeName?: string;
   startedDate?: string;
   dueDate?: string;
   createdAt: string;
