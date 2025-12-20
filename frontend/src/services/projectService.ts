@@ -15,7 +15,14 @@ import {
   Module,
   ModuleFilters,
   CreateModuleRequest,
+  ProjectMember,
+  ProjectInvitation,
+  InviteProjectMemberRequest,
+  InviteProjectMemberResponse,
+  UpdateProjectMemberRoleRequest,
+  ProjectRole,
 } from '../types';
+import { numericToProjectRole } from '../utils/projectRoleMapping';
 
 // Backend response type (IsActive boolean olarak geliyor)
 interface BackendProject {
@@ -26,6 +33,9 @@ interface BackendProject {
   startedDate: string;
   createdDate?: string;
   updatedDate?: string;
+  creatorId?: string; // Projeyi oluşturan kullanıcının ID'si
+  creatorEmail?: string; // Projeyi oluşturan kullanıcının email'i
+  creatorName?: string; // Projeyi oluşturan kullanıcının adı
 }
 
 interface BackendProjectListResponse {
@@ -48,6 +58,9 @@ function mapBackendProjectToFrontend(backendProject: BackendProject): Project {
     startedDate: backendProject.startedDate,
     createdAt: backendProject.createdDate || backendProject.startedDate,
     updatedAt: backendProject.updatedDate || backendProject.startedDate,
+    ownerId: backendProject.creatorId,
+    ownerEmail: backendProject.creatorEmail,
+    ownerName: backendProject.creatorName,
   };
 }
 
@@ -188,6 +201,139 @@ export class ProjectService {
       }
       
       throw new Error('Proje silinemedi');
+    }
+  }
+
+  // ========== PROJECT MEMBERS ==========
+
+  /**
+   * Proje üyelerini listele
+   * @param projectId Proje ID'si
+   * @returns Proje üyeleri listesi
+   */
+  static async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
+    const response = await apiClient.get<any[]>(`/api/v1/projects/${projectId}/members`);
+    
+    if (response.success && response.data) {
+      // Backend'den gelen role'u normalize et (numeric ise string enum'a çevir)
+      return response.data.map((member) => {
+        let normalizedRole = member.role;
+        // Eğer role numeric ise, string enum'a çevir
+        if (typeof member.role === 'number') {
+          normalizedRole = numericToProjectRole(member.role);
+        }
+        return {
+          ...member,
+          role: normalizedRole as ProjectRole,
+        };
+      });
+    }
+    
+    throw new Error('Proje üyeleri yüklenemedi');
+  }
+
+  /**
+   * Proje üyesi rolünü güncelle
+   * @param projectId Proje ID'si
+   * @param userId Kullanıcı ID'si
+   * @param role Yeni rol
+   */
+  static async updateMemberRole(
+    projectId: string,
+    userId: string,
+    role: ProjectRole
+  ): Promise<void> {
+    const response = await apiClient.put(
+      `/api/v1/projects/${projectId}/members/${userId}/role`,
+      { role }
+    );
+    
+    if (!response.success) {
+      throw new Error('Üye rolü güncellenemedi');
+    }
+  }
+
+  /**
+   * Proje üyesini kaldır
+   * @param projectId Proje ID'si
+   * @param userId Kullanıcı ID'si
+   */
+  static async removeMember(projectId: string, userId: string): Promise<void> {
+    const response = await apiClient.delete(
+      `/api/v1/projects/${projectId}/members/${userId}`
+    );
+    
+    if (!response.success) {
+      throw new Error('Üye kaldırılamadı');
+    }
+  }
+
+  // ========== PROJECT INVITATIONS ==========
+
+  /**
+   * Projeye email ile davetiye gönder
+   * @param projectId Proje ID'si
+   * @param data Davetiye bilgileri (email, role)
+   * @returns Davetiye bilgileri (invitationId, email, expiresAt)
+   */
+  static async inviteProjectMember(
+    projectId: string,
+    data: InviteProjectMemberRequest
+  ): Promise<InviteProjectMemberResponse> {
+    const response = await apiClient.post<InviteProjectMemberResponse>(
+      `/api/v1/projects/${projectId}/invitations`,
+      data
+    );
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error('Davetiye gönderilemedi');
+  }
+
+  /**
+   * Proje davetiyelerini listele
+   * @param projectId Proje ID'si
+   * @param status Filtreleme için status (opsiyonel)
+   * @returns Davetiye listesi
+   */
+  static async getProjectInvitations(
+    projectId: string,
+    status?: 'Pending' | 'Accepted' | 'Cancelled' | 'Expired'
+  ): Promise<ProjectInvitation[]> {
+    const params = new URLSearchParams();
+    if (status) {
+      params.append('status', status);
+    }
+    
+    const queryString = params.toString();
+    const endpoint = `/api/v1/projects/${projectId}/invitations${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await apiClient.get<ProjectInvitation[]>(endpoint);
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error('Davetiyeler yüklenemedi');
+  }
+
+  /**
+   * Proje davetiyesini iptal et
+   * @param projectId Proje ID'si
+   * @param invitationId Davetiye ID'si
+   */
+  static async cancelInvitation(
+    projectId: string,
+    invitationId: string
+  ): Promise<void> {
+    const response = await apiClient.delete(
+      `/api/v1/projects/${projectId}/invitations/${invitationId}`
+    );
+    
+    if (!response.success) {
+      throw new Error('Davetiye iptal edilemedi');
     }
   }
 }
