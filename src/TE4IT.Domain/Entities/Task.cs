@@ -17,6 +17,8 @@ public class Task : AggregateRoot
     public string? ImportantNotes { get; private set; } // Önemli Notlar
     public DateTime? StartedDate { get; private set; } // Başlangıç Tarihi (sadece başlatıldığında set edilir)
     public DateTime? DueDate { get; private set; } // Bitiş Tarihi
+    public string? CompletionNote { get; private set; } // Tamamlanma notu/açıklaması
+    public DateTime? CompletedDate { get; private set; } // Tamamlanma tarihi
     public TaskType TaskType { get; private set; } // Görev tipi (Özellik, Dokümantasyon, Test, Hata Düzeltme vb.)
     public TaskState TaskState { get; private set; } = TaskState.NotStarted; // Başlangıç durumu NotStarted olarak ayarlandı
     private readonly List<TaskRelation> _relations = new();
@@ -70,7 +72,8 @@ public class Task : AggregateRoot
     /// <summary>
     /// Görevi tamamlar
     /// </summary>
-    public void Complete()
+    /// <param name="completionNote">Tamamlanma notu/açıklaması (opsiyonel)</param>
+    public void Complete(string? completionNote = null)
     {
         if (TaskState != TaskState.InProgress)
             throw new InvalidTaskStateTransitionException(TaskState, TaskState.Completed);
@@ -78,10 +81,14 @@ public class Task : AggregateRoot
         if (AssigneeId == null)
             throw new InvalidOperationException("Atanmamış görev tamamlanamaz.");
 
+        ValidateCompletionNote(completionNote);
+
         TaskState = TaskState.Completed;
+        CompletionNote = completionNote;
+        CompletedDate = DateTime.UtcNow;
         UpdatedDate = DateTime.UtcNow;
 
-        AddDomainEvent(new TaskCompletedEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType));
+        AddDomainEvent(new TaskCompletedEvent(Id, AssigneeId.Value, UseCaseId, Title, TaskType, completionNote));
     }
 
     /// <summary>
@@ -126,6 +133,20 @@ public class Task : AggregateRoot
         UpdatedDate = DateTime.UtcNow;
 
         AddDomainEvent(new TaskAssignedEvent(Id, assigneeId.Value, assignerId.Value, UseCaseId, Title, TaskType, DueDate));
+    }
+
+    /// <summary>
+    /// Görevden atamayı kaldırır
+    /// </summary>
+    public void UnassignTo()
+    {
+        if (TaskState == TaskState.InProgress)
+            throw new InvalidOperationException("Devam eden görevden atama kaldırılamaz.");
+
+        AssigneeId = null;
+        UpdatedDate = DateTime.UtcNow;
+
+        AddDomainEvent(new TaskUnassignedEvent(Id, UseCaseId, Title, TaskType));
     }
 
     /// <summary>
@@ -219,7 +240,16 @@ public class Task : AggregateRoot
     /// </summary>
     public bool CanBeCompleted()
     {
-        return TaskState == TaskState.InProgress && !GetBlockingRelations().Any();
+        if (TaskState != TaskState.InProgress)
+            return false;
+
+        if (AssigneeId == null)
+            return false;
+
+        if (GetBlockingRelations().Any())
+            return false;
+
+        return true;
     }
 
     /// <summary>
@@ -252,6 +282,12 @@ public class Task : AggregateRoot
     {
         if (importantNotes != null && importantNotes.Length > DomainConstants.MaxTaskImportantNotesLength)
             throw new ArgumentException($"Önemli notlar en fazla {DomainConstants.MaxTaskImportantNotesLength} karakter olabilir.", nameof(importantNotes));
+    }
+
+    private static void ValidateCompletionNote(string? completionNote)
+    {
+        if (completionNote != null && completionNote.Length > DomainConstants.MaxTaskCompletionNoteLength)
+            throw new ArgumentException($"Tamamlanma notu en fazla {DomainConstants.MaxTaskCompletionNoteLength} karakter olabilir.", nameof(completionNote));
     }
 }
 

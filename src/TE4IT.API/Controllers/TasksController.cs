@@ -96,6 +96,13 @@ public class TasksController(IMediator mediator) : ControllerBase
     /// <summary>
     /// Görev durumunu değiştirir
     /// </summary>
+    /// <remarks>
+    /// Geçerli state geçişleri:
+    /// - NotStarted → InProgress (Start)
+    /// - InProgress → Completed (Complete)
+    /// - NotStarted/InProgress → Cancelled (Cancel)
+    /// - InProgress/Cancelled → NotStarted (Revert)
+    /// </remarks>
     [HttpPatch("{id:guid}/state")]
     [Authorize(Policy = "TaskStateChange")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -107,6 +114,113 @@ public class TasksController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var command = new Commands.ChangeTaskState.ChangeTaskStateCommand(id, request.NewState);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Görevi başlatır
+    /// </summary>
+    /// <remarks>
+    /// Görevi başlatır. Sadece NotStarted durumundaki görevler başlatılabilir.
+    /// Görev atanmış olmalıdır.
+    /// </remarks>
+    [HttpPost("{id:guid}/start")]
+    [Authorize(Policy = "TaskStateChange")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Start(Guid id, CancellationToken ct)
+    {
+        var command = new Commands.StartTask.StartTaskCommand(id);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Görevi tamamlar
+    /// </summary>
+    /// <remarks>
+    /// Görevi tamamlar. Sadece InProgress durumundaki görevler tamamlanabilir.
+    /// Bloklayan bağımlılıklar varsa görev tamamlanamaz.
+    /// Tamamlanma notu/açıklaması opsiyoneldir.
+    /// </remarks>
+    [HttpPost("{id:guid}/complete")]
+    [Authorize(Policy = "TaskStateChange")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Complete(
+        Guid id,
+        [FromBody] CompleteTaskRequest? request = null,
+        CancellationToken ct = default)
+    {
+        var command = new Commands.CompleteTask.CompleteTaskCommand(id, request?.CompletionNote);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Görevi iptal eder
+    /// </summary>
+    /// <remarks>
+    /// Görevi iptal eder. Sadece NotStarted veya InProgress durumundaki görevler iptal edilebilir.
+    /// Completed durumundaki görevler iptal edilemez.
+    /// </remarks>
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "TaskStateChange")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var command = new Commands.CancelTask.CancelTaskCommand(id);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Görevden atamayı kaldırır
+    /// </summary>
+    /// <remarks>
+    /// Görevden atamayı kaldırır. Sadece NotStarted veya Cancelled durumundaki görevlerden atama kaldırılabilir.
+    /// InProgress durumundaki görevlerden atama kaldırılamaz.
+    /// </remarks>
+    [HttpPost("{id:guid}/unassign")]
+    [Authorize(Policy = "TaskAssign")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unassign(Guid id, CancellationToken ct)
+    {
+        var command = new Commands.UnassignTask.UnassignTaskCommand(id);
+        var ok = await mediator.Send(command, ct);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Görevi bir kişiye atar ve başlatır
+    /// </summary>
+    /// <remarks>
+    /// Görevi belirtilen kişiye atar ve aynı anda başlatır.
+    /// Görev NotStarted durumunda olmalıdır.
+    /// </remarks>
+    [HttpPost("{id:guid}/assign-and-start")]
+    [Authorize(Policy = "TaskAssign")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AssignAndStart(
+        Guid id,
+        [FromBody] AssignTaskRequest request,
+        CancellationToken ct)
+    {
+        var command = new Commands.AssignAndStartTask.AssignAndStartTaskCommand(id, request.AssigneeId);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -165,3 +279,8 @@ public record ChangeTaskStateRequest(TaskState NewState);
 /// Görev atama request DTO
 /// </summary>
 public record AssignTaskRequest(Guid AssigneeId);
+
+/// <summary>
+/// Görev tamamlama request DTO
+/// </summary>
+public record CompleteTaskRequest(string? CompletionNote);

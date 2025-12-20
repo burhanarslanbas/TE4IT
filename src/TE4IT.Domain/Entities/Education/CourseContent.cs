@@ -34,13 +34,13 @@ public sealed class CourseContent : BaseEntity
         Description = description;
     }
 
-    public ContentType Type { get; private set; }
-    public string Title { get; private set; } = default!;
-    public string? Description { get; private set; }
-    public string? Content { get; private set; }
-    public string? LinkUrl { get; private set; }
-    public string? EmbedUrl { get; private set; }
-    public string? Platform { get; private set; }
-    public int Order { get; private set; }
-    public bool IsRequired { get; private set; }
+    public ContentType Type { get; set; }
+    public string Title { get; set; } = default!;
+    public string? Description { get; set; }
+    public string? Content { get; set; }
+    public string? LinkUrl { get; set; }
+    public string? EmbedUrl { get; set; }
+    public string? Platform { get; set; }
+    public int Order { get; set; }
+    public bool IsRequired { get; set; }
 }

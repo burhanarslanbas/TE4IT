@@ -14,6 +14,8 @@ public sealed class TaskResponse
     public string? ImportantNotes { get; init; }
     public DateTime? StartedDate { get; init; }
     public DateTime? DueDate { get; init; }
+    public string? CompletionNote { get; init; }
+    public DateTime? CompletedDate { get; init; }
     public TaskType TaskType { get; init; }
     public TaskState TaskState { get; init; }
     public List<TaskRelationResponse> Relations { get; init; } = new();

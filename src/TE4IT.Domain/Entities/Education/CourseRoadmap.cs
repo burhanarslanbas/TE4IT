@@ -7,7 +7,7 @@ namespace TE4IT.Domain.Entities.Education;
 /// </summary>
 public sealed class CourseRoadmap : BaseEntity
 {
-    private readonly List<RoadmapStep> steps = new();
+    private List<RoadmapStep> steps = new();
 
     private CourseRoadmap()
     {
@@ -20,9 +20,9 @@ public sealed class CourseRoadmap : BaseEntity
         Description = description;
     }
 
-    public string Title { get; private set; } = default!;
-    public string? Description { get; private set; }
-    public int EstimatedDurationMinutes { get; private set; }
+    public string Title { get; set; } = default!;
+    public string? Description { get; set; }
+    public int EstimatedDurationMinutes { get; set; }
 
     public IReadOnlyCollection<RoadmapStep> Steps => steps.AsReadOnly();
 
