@@ -2,12 +2,15 @@ using MediatR;
 using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Courses;
 using TE4IT.Application.Features.Education.Courses.Responses;
 using TE4IT.Application.Features.Education.Roadmaps.Responses;
+using TE4IT.Domain.Enums.Education;
 using TE4IT.Domain.Exceptions.Common;
+using TE4IT.Domain.Services;
 
 namespace TE4IT.Application.Features.Education.Roadmaps.Queries.GetRoadmapByCourseId;
 
 public sealed class GetRoadmapByCourseIdQueryHandler(
-    ICourseReadRepository courseReadRepository) : IRequestHandler<GetRoadmapByCourseIdQuery, RoadmapResponse?>
+    ICourseReadRepository courseReadRepository,
+    IVideoUrlService videoUrlService) : IRequestHandler<GetRoadmapByCourseIdQuery, RoadmapResponse?>
 {
     public async Task<RoadmapResponse?> Handle(GetRoadmapByCourseIdQuery request, CancellationToken cancellationToken)
     {
@@ -22,8 +25,6 @@ public sealed class GetRoadmapByCourseIdQueryHandler(
             return null;
         }
 
-        // TODO: IVideoUrlService ile video içeriklerine embedUrl eklenecek
-
         return new RoadmapResponse
         {
             Title = course.Roadmap.Title,
@@ -35,15 +36,32 @@ public sealed class GetRoadmapByCourseIdQueryHandler(
                 Title = step.Title,
                 Description = step.Description,
                 Order = step.Order,
-                Contents = step.Contents.Select(content => new ContentResponse
+                IsRequired = step.IsRequired,
+                EstimatedDurationMinutes = step.EstimatedDurationMinutes,
+                Contents = step.Contents.Select(content =>
                 {
-                    Id = content.Id,
-                    Title = content.Title,
-                    Description = content.Description,
-                    Type = content.Type,
-                    Content = content.Content,
-                    LinkUrl = content.LinkUrl,
-                    EmbedUrl = content.EmbedUrl
+                    // Video içeriklerine embedUrl ve platform ekle
+                    string? embedUrl = null;
+                    string? platform = null;
+                    if (content.Type == ContentType.VideoLink && !string.IsNullOrEmpty(content.LinkUrl))
+                    {
+                        embedUrl = videoUrlService.GetEmbedUrl(content.LinkUrl);
+                        platform = videoUrlService.DetectPlatform(content.LinkUrl);
+                    }
+
+                    return new ContentResponse
+                    {
+                        Id = content.Id,
+                        Title = content.Title,
+                        Description = content.Description,
+                        Type = content.Type,
+                        Order = content.Order,
+                        IsRequired = content.IsRequired,
+                        Content = content.Content,
+                        LinkUrl = content.LinkUrl,
+                        EmbedUrl = embedUrl ?? content.EmbedUrl,
+                        Platform = platform ?? content.Platform
+                    };
                 }).ToList()
             }).ToList()
         };

@@ -41,7 +41,33 @@ EMAIL_USERNAME = infoarslanbas@gmail.com
 EMAIL_PASSWORD = {Your_Gmail_App_Password}
 ```
 
-### **5. Frontend URL (ÖNEMLİ!)**
+### **5. MongoDB Settings**
+
+```plaintext
+MongoDB__ConnectionString = mongodb+srv://{username}:{password}@te4it-education-dev.jpzdt0e.mongodb.net/?retryWrites=true&w=majority&appName=te4it-education-dev
+MongoDB__DatabaseName = te4it-education-dev
+```
+
+veya JSON formatında:
+
+```json
+{
+  "MongoDB": {
+    "ConnectionString": "mongodb+srv://...",
+    "DatabaseName": "te4it-education-dev"
+  }
+}
+```
+
+### **6. Application Insights (Opsiyonel ama Önerilir)**
+
+Application Insights otomatik olarak Azure tarafından yapılandırılır, ancak manuel olarak da ekleyebilirsiniz:
+
+```plaintext
+APPLICATIONINSIGHTS_CONNECTION_STRING = InstrumentationKey=...;IngestionEndpoint=https://...
+```
+
+### **7. Frontend URL (ÖNEMLİ!)**
 
 ```plaintext
 FRONTEND_URL = https://te4it-frontend.up.railway.app
@@ -97,21 +123,86 @@ Azure Environment Variables (Final Override)
 
 ---
 
+## ⚡ Cold Start ve Performans Optimizasyonları
+
+### **1. Always On Ayarı (ÖNEMLİ!)**
+
+Azure App Service'te **Always On** özelliğini aktifleştirin:
+
+1. Azure Portal → App Service → **Configuration** → **General settings**
+2. **Always On** seçeneğini **On** yapın
+3. **Save** butonuna tıklayın
+
+Bu ayar, uygulamanın idle durumda bile çalışır durumda kalmasını sağlar ve cold start'ı önler.
+
+### **2. Application Insights İzleme**
+
+Performans sorunlarını izlemek için Application Insights ekleyin:
+
+1. Azure Portal → App Service → **Application Insights** → **Turn on Application Insights**
+2. Yeni bir Application Insights kaynağı oluşturun veya mevcut birini seçin
+3. Azure otomatik olarak `APPLICATIONINSIGHTS_CONNECTION_STRING` environment variable'ını ekler
+
+**Application Insights'ta İzlenebilecek Metrikler:**
+- **Server Response Time**: İstek yanıt süreleri
+- **Request Rate**: Saniye başına istek sayısı
+- **Failed Requests**: Başarısız istekler
+- **Dependencies**: Database, MongoDB, external API çağrıları
+- **Exceptions**: Hatalar ve exception'lar
+- **Performance Counters**: CPU, Memory kullanımı
+
+**Application Insights'ta Cold Start'ı İzleme:**
+1. Azure Portal → Application Insights → **Performance**
+2. **Server Response Time** grafiğinde ilk isteklerin daha yavaş olduğunu görebilirsiniz
+3. **Dependencies** sekmesinde MongoDB ve PostgreSQL bağlantı sürelerini izleyebilirsiniz
+
+### **3. Warm-up Mekanizması**
+
+Uygulama startup'ta otomatik olarak şunları yapar:
+- ✅ **EF Core Model Warm-up**: PostgreSQL bağlantısını test eder ve model'i cache'ler
+- ✅ **MongoDB Warm-up**: MongoDB bağlantısını test eder ve connection pool'u oluşturur
+- ✅ **Database Seeding**: Rol seeding'i yapılandırılmışsa çalıştırır
+
+Bu warm-up mekanizması sayesinde ilk istekler daha hızlı yanıt verir.
+
+### **4. App Service Plan Önerileri**
+
+**Basic/Free Tier:**
+- ❌ Always On özelliği yok
+- ❌ Cold start sorunları yaşanır
+- ⚠️ Production için önerilmez
+
+**Standard/Production Tier:**
+- ✅ Always On özelliği var
+- ✅ Daha iyi performans
+- ✅ Auto-scaling desteği
+- ✅ Production için önerilir
+
+### **5. Connection Pooling**
+
+Uygulama otomatik olarak:
+- **PostgreSQL**: Connection pooling aktif (Npgsql default)
+- **MongoDB**: Connection pool timeout'ları optimize edildi (30 saniye)
+
 ## ✅ Deployment Checklist
 
 Deployment öncesi kontrol listesi:
 
 - [x] `appsettings.Production.json` oluşturuldu
 - [ ] Azure'da `ASPNETCORE_ENVIRONMENT=Production` ayarlandı
+- [ ] Azure'da **Always On** özelliği aktifleştirildi
+- [ ] Azure'da Application Insights yapılandırıldı
 - [ ] Azure'da `FRONTEND_URL` environment variable eklendi
 - [ ] Azure'da `JWT_SIGNING_KEY` production key ile güncellendi
 - [ ] Azure'da `CONNECTION_STRING` production database ile güncellendi
+- [ ] Azure'da `MongoDB:ConnectionString` ve `MongoDB:DatabaseName` eklendi
 - [ ] Azure'da email credentials (`EMAIL_USERNAME`, `EMAIL_PASSWORD`) eklendi
 - [ ] `.gitignore` içinde hassas bilgiler kontrol edildi
 - [ ] GitHub'a push yapıldı
 - [ ] Azure deployment logları kontrol edildi
 - [ ] Swagger UI açıldı ve test edildi
 - [ ] Email gönderimi test edildi (register, forgotPassword)
+- [ ] Application Insights'ta performans metrikleri kontrol edildi
 
 ---
 
@@ -132,6 +223,12 @@ Deployment öncesi kontrol listesi:
 ### **CORS Hatası**
 - `ASPNETCORE_ENVIRONMENT=Production` olmalı
 - Production CORS origins içinde frontend domain'i var mı kontrol edin
+
+### **İlk İstekler Yavaş (Cold Start)**
+- Azure'da **Always On** özelliğinin aktif olduğundan emin olun
+- Application Insights'ta **Performance** sekmesinde response time'ları kontrol edin
+- Warm-up mekanizması startup loglarında görünmeli
+- MongoDB ve PostgreSQL bağlantı sürelerini Application Insights'ta kontrol edin
 
 ---
 

@@ -378,6 +378,22 @@ public static class AuthenticationRegistration
                 ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
                 ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.RoadmapView)
             ));
+            o.AddPolicy("ProgressView", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.ProgressView)
+            ));
+            o.AddPolicy("ProgressUpdate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.ProgressUpdate)
+            ));
         });
         return services;
     }

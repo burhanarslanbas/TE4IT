@@ -23,12 +23,12 @@ public sealed class Enrollment : AggregateRoot
         AddDomainEvent(new EnrollmentCreatedEvent(Id, userId, courseId));
     }
 
-    public Guid UserId { get; private set; }
-    public Guid CourseId { get; private set; }
-    public DateTime EnrolledAt { get; private set; }
-    public DateTime? StartedAt { get; private set; }
-    public DateTime? CompletedAt { get; private set; }
-    public bool IsActive { get; private set; }
+    public Guid UserId { get; set; }
+    public Guid CourseId { get; set; }
+    public DateTime EnrolledAt { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public bool IsActive { get; set; }
 
     public void MarkStarted()
     {

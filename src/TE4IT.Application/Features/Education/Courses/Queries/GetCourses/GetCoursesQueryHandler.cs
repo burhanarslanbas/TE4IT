@@ -1,12 +1,14 @@
 using MediatR;
 using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Courses;
+using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Enrollments;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Education.Courses.Responses;
 
 namespace TE4IT.Application.Features.Education.Courses.Queries.GetCourses;
 
 public sealed class GetCoursesQueryHandler(
-    ICourseReadRepository courseReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
+    ICourseReadRepository courseReadRepository,
+    IEnrollmentReadRepository enrollmentReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
 {
     public async Task<PagedResult<CourseListItemResponse>> Handle(GetCoursesQuery request, CancellationToken cancellationToken)
     {
@@ -16,17 +18,27 @@ public sealed class GetCoursesQueryHandler(
             request.Search,
             cancellationToken);
 
-        var items = pagedCourses.Items.Select(course => new CourseListItemResponse
+        var items = new List<CourseListItemResponse>();
+        
+        foreach (var course in pagedCourses.Items)
         {
-            Id = course.Id,
-            Title = course.Title,
-            Description = course.Description,
-            ThumbnailUrl = course.ThumbnailUrl,
-            EstimatedDurationMinutes = course.Roadmap?.EstimatedDurationMinutes,
-            StepCount = course.Roadmap?.Steps.Count ?? 0,
-            EnrollmentCount = 0, // TODO: Enrollment repository'den alınacak
-            CreatedAt = course.CreatedDate
-        }).ToList();
+            // Enrollment count'u her kurs için al
+            var enrollmentCount = await enrollmentReadRepository.GetEnrollmentCountByCourseAsync(
+                course.Id,
+                cancellationToken);
+
+            items.Add(new CourseListItemResponse
+            {
+                Id = course.Id,
+                Title = course.Title,
+                Description = course.Description,
+                ThumbnailUrl = course.ThumbnailUrl,
+                EstimatedDurationMinutes = course.Roadmap?.EstimatedDurationMinutes,
+                StepCount = course.Roadmap.Steps.Count,
+                EnrollmentCount = enrollmentCount,
+                CreatedAt = course.CreatedDate
+            });
+        }
 
         return new PagedResult<CourseListItemResponse>(
             items,

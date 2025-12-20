@@ -11,6 +11,8 @@ public sealed class ContentResponse
     public string Title { get; init; } = default!;
     public string? Description { get; init; }
     public ContentType Type { get; init; }
+    public int Order { get; init; }
+    public bool IsRequired { get; init; }
     public string? Content { get; init; }
     public string? LinkUrl { get; init; }
     public string? EmbedUrl { get; init; }

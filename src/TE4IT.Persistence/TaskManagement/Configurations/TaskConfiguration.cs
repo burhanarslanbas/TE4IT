@@ -13,6 +13,8 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<DomainTask>
         b.Property(t => t.Title).IsRequired().HasMaxLength(200);
         b.Property(t => t.Description).HasMaxLength(2000);
         b.Property(t => t.ImportantNotes).HasMaxLength(1000);
+        b.Property(t => t.CompletionNote).HasMaxLength(2000).IsRequired(false);
+        b.Property(t => t.CompletedDate).IsRequired(false);
         b.Property(t => t.CreatorId).HasConversion(v => v.Value, v => (UserId)v);
         b.Property(t => t.AssigneeId)
             .HasConversion(

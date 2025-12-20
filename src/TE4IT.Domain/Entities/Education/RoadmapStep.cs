@@ -7,7 +7,7 @@ namespace TE4IT.Domain.Entities.Education;
 /// </summary>
 public sealed class RoadmapStep : BaseEntity
 {
-    private readonly List<CourseContent> contents = new();
+    private List<CourseContent> contents = new();
 
     private RoadmapStep()
     {
@@ -22,11 +22,11 @@ public sealed class RoadmapStep : BaseEntity
         Description = description;
     }
 
-    public string Title { get; private set; } = default!;
-    public string? Description { get; private set; }
-    public int Order { get; private set; }
-    public bool IsRequired { get; private set; }
-    public int EstimatedDurationMinutes { get; private set; }
+    public string Title { get; set; } = default!;
+    public string? Description { get; set; }
+    public int Order { get; set; }
+    public bool IsRequired { get; set; }
+    public int EstimatedDurationMinutes { get; set; }
 
     public IReadOnlyCollection<CourseContent> Contents => contents.AsReadOnly();
 

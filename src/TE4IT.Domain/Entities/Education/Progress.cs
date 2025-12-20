@@ -22,16 +22,16 @@ public sealed class Progress : AggregateRoot
         LastAccessedAt = DateTime.UtcNow;
     }
 
-    public Guid UserId { get; private set; }
-    public Guid EnrollmentId { get; private set; }
-    public Guid CourseId { get; private set; }
-    public Guid StepId { get; private set; }
-    public Guid ContentId { get; private set; }
-    public bool IsCompleted { get; private set; }
-    public DateTime? CompletedAt { get; private set; }
-    public int? TimeSpentMinutes { get; private set; }
-    public DateTime? LastAccessedAt { get; private set; }
-    public int? WatchedPercentage { get; private set; }
+    public Guid UserId { get; set; }
+    public Guid EnrollmentId { get; set; }
+    public Guid CourseId { get; set; }
+    public Guid StepId { get; set; }
+    public Guid ContentId { get; set; }
+    public bool IsCompleted { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public int? TimeSpentMinutes { get; set; }
+    public DateTime? LastAccessedAt { get; set; }
+    public int? WatchedPercentage { get; set; }
 
     public void MarkAccessed()
     {

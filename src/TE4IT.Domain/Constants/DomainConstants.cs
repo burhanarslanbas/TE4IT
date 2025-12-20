@@ -29,6 +29,7 @@ public static class DomainConstants
     public const int MinTaskTitleLength = 3;
     public const int MaxTaskDescriptionLength = 2000;
     public const int MaxTaskImportantNotesLength = 1000;
+    public const int MaxTaskCompletionNoteLength = 2000;
     public const int MaxTasksPerUseCase = 500;
     public const int MaxTaskRelationsPerTask = 20;
 

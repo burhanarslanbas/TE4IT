@@ -1,3 +1,4 @@
+using System.Reflection;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -49,6 +50,14 @@ public static class EducationMongoMappings
         {
             cm.AutoMap();
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
+            
+            // Steps property'sini ignore et (read-only collection, backing field kullanılacak)
+            cm.UnmapMember(c => c.Steps);
+            
+            // Backing field'ı map et - MongoDB'deki "Steps" array'ini backing field'a yaz
+            // MapField string field name bekler
+            cm.MapField("steps").SetElementName("Steps");
+            
             // Embedded document, Course içinde tutulur
         });
     }
@@ -59,6 +68,14 @@ public static class EducationMongoMappings
         {
             cm.AutoMap();
             cm.SetIdMember(cm.GetMemberMap(s => s.Id));
+            
+            // Contents property'sini ignore et (read-only collection, backing field kullanılacak)
+            cm.UnmapMember(s => s.Contents);
+            
+            // Backing field'ı map et - MongoDB'deki "Contents" array'ini backing field'a yaz
+            // MapField string field name bekler
+            cm.MapField("contents").SetElementName("Contents");
+            
             // Embedded document, CourseRoadmap içinde tutulur
         });
     }

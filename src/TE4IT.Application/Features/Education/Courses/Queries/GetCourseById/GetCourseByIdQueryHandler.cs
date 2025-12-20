@@ -64,6 +64,8 @@ public sealed class GetCourseByIdQueryHandler(
                     Title = step.Title,
                     Description = step.Description,
                     Order = step.Order,
+                    IsRequired = step.IsRequired,
+                    EstimatedDurationMinutes = step.EstimatedDurationMinutes,
                     Contents = step.Contents.Select(content =>
                     {
                         // Video içeriklerine embedUrl ve platform ekle
@@ -81,6 +83,8 @@ public sealed class GetCourseByIdQueryHandler(
                             Title = content.Title,
                             Description = content.Description,
                             Type = content.Type,
+                            Order = content.Order,
+                            IsRequired = content.IsRequired,
                             Content = content.Content,
                             LinkUrl = content.LinkUrl,
                             EmbedUrl = embedUrl,

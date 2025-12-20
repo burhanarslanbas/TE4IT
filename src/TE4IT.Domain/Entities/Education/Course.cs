@@ -24,16 +24,16 @@ public sealed class Course : AggregateRoot
         AddDomainEvent(new CourseCreatedEvent(Id, createdBy, title));
     }
 
-    public string Title { get; private set; } = default!;
-    public string Description { get; private set; } = default!;
-    public string? ThumbnailUrl { get; private set; }
-    public Guid CreatedBy { get; private set; }
-    public bool IsActive { get; private set; } = true;
+    public string Title { get; set; } = default!;
+    public string Description { get; set; } = default!;
+    public string? ThumbnailUrl { get; set; }
+    public Guid CreatedBy { get; set; }
+    public bool IsActive { get; set; } = true;
 
     /// <summary>
     /// Kursun öğrenme yolu. Tek roadmap kuralı aggregate içinde korunur.
     /// </summary>
-    public CourseRoadmap? Roadmap { get; private set; }
+    public CourseRoadmap? Roadmap { get; set; }
 
     public void SetRoadmap(CourseRoadmap roadmap)
     {
