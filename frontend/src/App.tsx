@@ -14,6 +14,7 @@ import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { ForgotPasswordPage } from "./components/forgot-password-page";
 import { ProjectsListPage } from "./pages/ProjectsListPage";
+import { TrainingsPage } from "./pages/TrainingsPage";
 import { ProjectDetailPage } from "./pages/projects/ProjectDetailPage/ProjectDetailPage";
 import { ModuleDetailPage } from "./pages/ModuleDetailPage";
 import { UseCaseDetailPage } from "./pages/UseCaseDetailPage";
@@ -330,6 +331,16 @@ export default function App() {
                 <div className="min-h-screen bg-[#0D1117]">
                   <ProfilePageWrapper />
                 </div>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Trainings List - Protected Route */}
+          <Route 
+            path="/trainings" 
+            element={
+              <ProtectedRoute>
+                <TrainingsPage />
               </ProtectedRoute>
             } 
           />
