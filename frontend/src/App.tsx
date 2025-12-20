@@ -23,6 +23,7 @@ import { CreateUseCasePage } from "./pages/CreateUseCasePage";
 import { CreateTaskPage } from "./pages/CreateTaskPage";
 import { EditTaskPage } from "./pages/EditTaskPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
+import { AcceptInvitationPage } from "./pages/AcceptInvitationPage";
 import { AuthService } from "./services/auth";
 import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
@@ -431,6 +432,12 @@ export default function App() {
                 <EditTaskPage />
               </ProtectedRoute>
             } 
+          />
+
+          {/* Accept Invitation - Public Route */}
+          <Route 
+            path="/accept-invitation" 
+            element={<AcceptInvitationPage />} 
           />
           
           {/* 404 - Not Found */}

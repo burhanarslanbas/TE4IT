@@ -3,13 +3,16 @@
  * Proje açıklaması ve tarih bilgileri
  */
 import { Project } from '../../../../types';
-import { Calendar, Layers } from 'lucide-react';
+import { Calendar, Layers, UserPlus } from 'lucide-react';
+import { Button } from '../../../../components/ui/button';
 
 interface ProjectInfoProps {
   project: Project;
+  onInviteMember?: () => void;
+  canManage?: boolean;
 }
 
-export function ProjectInfo({ project }: ProjectInfoProps) {
+export function ProjectInfo({ project, onInviteMember, canManage = false }: ProjectInfoProps) {
   return (
     <>
       {project.description && (
@@ -22,6 +25,7 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         </div>
       )}
 
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
         <Calendar className="w-4 h-4" />
         <span>Başlangıç:</span>
@@ -32,6 +36,18 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
             year: 'numeric'
           })}
         </span>
+        </div>
+
+        {canManage && onInviteMember && (
+          <Button
+            onClick={onInviteMember}
+            className="bg-gradient-to-r from-[#2DD4BF] to-[#14B8A6] hover:from-[#14B8A6] hover:to-[#0D9488] text-white shadow-lg shadow-[#2DD4BF]/40"
+            size="sm"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Üye Ekle
+          </Button>
+        )}
       </div>
     </>
   );

@@ -3,14 +3,18 @@
  * SOLID prensiplerine uygun, component bazlı yapı
  * Route: /projects/:projectId
  */
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ProjectService } from '../../../services/projectService';
 import { useProject } from '../../../hooks/useProject';
 import { useModules } from '../../../hooks/useModules';
+import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '../../../utils/permissions';
-import type { ModuleFilters } from '../../../types';
+import type { ModuleFilters, ProjectMember } from '../../../types';
+import { ProjectRole } from '../../../types';
+import { numericToProjectRole } from '../../../utils/projectRoleMapping';
+import { getToken } from '../../../utils/tokenManager';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../../../components/ui/dialog';
 import { toast } from 'sonner';
@@ -21,6 +25,9 @@ import { ProjectInfo } from './components/ProjectInfo';
 import { ModuleFiltersComponent } from './components/ModuleFilters';
 import { ModuleList } from './components/ModuleList';
 import { EditProjectForm } from './components/EditProjectForm';
+import { ProjectMembersSection } from '../../../components/projects/ProjectMembersSection';
+import { InvitationsList } from '../../../components/projects/InvitationsList';
+import { InviteMemberModal } from '../../../components/projects/InviteMemberModal';
 
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -33,10 +40,127 @@ export function ProjectDetailPage() {
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [membersKey, setMembersKey] = useState(0); // Force re-render için
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
 
   // Custom hooks kullan
   const { project, loading, error, refetch: refetchProject } = useProject(projectId);
   const { modules, loading: modulesLoading, refetch: refetchModules } = useModules(projectId, filters);
+  const { user: currentUser, isLoading: authLoading } = useAuth();
+
+  // Proje üyelerini yükle (Owner rolünü bulmak için)
+  useEffect(() => {
+    if (projectId) {
+      ProjectService.getProjectMembers(projectId)
+        .then((members) => {
+          console.log('[DEBUG] Project members loaded:', members);
+          setProjectMembers(members);
+        })
+        .catch((error) => {
+          console.error('[DEBUG] Error loading project members:', error);
+          toast.error('Üyeler yüklenemedi', {
+            description: error.message || 'Bir hata oluştu',
+          });
+        });
+    }
+  }, [projectId, membersKey]);
+
+  // Token'dan email al (fallback olarak)
+  const getEmailFromToken = (): string | null => {
+    try {
+      const token = getToken();
+      if (!token) return null;
+      
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.email || payload.Email || payload.emailAddress || null;
+    } catch (error) {
+      console.error('[DEBUG] Error getting email from token:', error);
+      return null;
+    }
+  };
+
+  // Sadece projeyi oluşturan kullanıcı üye yönetimi yapabilir
+  // Backend'den ownerId gelmiyorsa, proje üyelerinden Owner rolüne sahip olanı bul
+  const canManageMembers = useMemo(() => {
+    const tokenEmail = getEmailFromToken();
+    
+    console.log('[DEBUG] canManageMembers check:', {
+      authLoading,
+      currentUser: currentUser ? { id: currentUser.id, email: currentUser.email } : null,
+      tokenEmail,
+      project: project ? { id: project.id, ownerId: project.ownerId, ownerEmail: project.ownerEmail } : null,
+      projectMembersCount: projectMembers.length,
+      projectMembers: projectMembers,
+    });
+
+    // Auth henüz yükleniyorsa, false dön (henüz bilinmiyor)
+    if (authLoading) {
+      console.log('[DEBUG] canManageMembers: false (auth still loading)');
+      return false;
+    }
+
+    if (!project) {
+      console.log('[DEBUG] canManageMembers: false (no project)');
+      return false;
+    }
+
+    // currentUser yoksa ama token'dan email alabiliyorsak, onu kullan
+    const userEmail = currentUser?.email || tokenEmail;
+    const userId = currentUser?.id;
+
+    if (!userEmail && !userId) {
+      console.log('[DEBUG] canManageMembers: false (no user email or id)');
+      return false;
+    }
+
+    // Önce backend'den gelen ownerId/ownerEmail ile kontrol et
+    if (project.ownerId && userId && userId === project.ownerId) {
+      console.log('[DEBUG] canManageMembers: true (ownerId match)');
+      return true;
+    }
+    if (project.ownerEmail && userEmail && userEmail === project.ownerEmail) {
+      console.log('[DEBUG] canManageMembers: true (ownerEmail match)');
+      return true;
+    }
+
+    // Backend'den owner bilgisi gelmiyorsa, proje üyelerinden Owner rolüne sahip olanı bul
+    // Role artık normalize edilmiş olmalı (string enum)
+    const ownerMember = projectMembers.find(
+      (member) => member.role === ProjectRole.Owner
+    );
+
+    console.log('[DEBUG] Owner member found:', ownerMember);
+
+    if (ownerMember) {
+      // Owner rolüne sahip üyenin ID'si veya email'i ile karşılaştır
+      const isOwner = 
+        (userId && ownerMember.userId === userId) ||
+        (userEmail && ownerMember.email === userEmail);
+      console.log('[DEBUG] canManageMembers:', isOwner, '(owner member match)', {
+        userId,
+        ownerMemberUserId: ownerMember.userId,
+        userEmail,
+        ownerMemberEmail: ownerMember.email,
+      });
+      return isOwner;
+    }
+
+    // Eğer hiç owner bulunamazsa, mevcut kullanıcının proje üyeleri arasında Owner rolüne sahip olup olmadığını kontrol et
+    const currentUserMember = projectMembers.find(
+      (member) =>
+        ((userId && member.userId === userId) || (userEmail && member.email === userEmail)) &&
+        member.role === ProjectRole.Owner
+    );
+
+    console.log('[DEBUG] Current user member:', currentUserMember);
+    const result = !!currentUserMember;
+    console.log('[DEBUG] canManageMembers final result:', result);
+    return result;
+  }, [currentUser, project, projectMembers, authLoading]);
 
   // Project actions
   const handleUpdateProject = async (data: { title: string; description: string }) => {
@@ -251,7 +375,57 @@ export function ProjectDetailPage() {
               moduleCount={modules.length}
             />
 
-            <ProjectInfo project={project} />
+            <ProjectInfo 
+              project={project} 
+              onInviteMember={() => setInviteModalOpen(true)}
+              canManage={hasPermission(PERMISSIONS.PROJECT_UPDATE)}
+            />
+          </motion.div>
+
+          {/* Members & Invitations Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="mb-8 space-y-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB]">
+                Üye Yönetimi
+              </h2>
+              {canManageMembers && (
+                <Button
+                  onClick={() => setInviteModalOpen(true)}
+                  className="bg-gradient-to-r from-[#2DD4BF] to-[#14B8A6] hover:from-[#14B8A6] hover:to-[#0D9488] text-white shadow-lg shadow-[#2DD4BF]/40"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Üye Davet Et
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ProjectMembersSection
+                key={membersKey}
+                projectId={projectId!}
+                canManage={canManageMembers || false}
+                onInviteClick={() => setInviteModalOpen(true)}
+              />
+              <InvitationsList
+                key={membersKey}
+                projectId={projectId!}
+                canManage={canManageMembers || false}
+              />
+            </div>
+
+            <InviteMemberModal
+              projectId={projectId!}
+              open={inviteModalOpen}
+              onClose={() => setInviteModalOpen(false)}
+              onSuccess={() => {
+                setMembersKey((prev) => prev + 1); // Force re-render for both members and invitations
+              }}
+            />
           </motion.div>
 
           {/* Modules Section */}

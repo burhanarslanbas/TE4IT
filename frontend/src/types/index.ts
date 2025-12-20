@@ -14,6 +14,17 @@ export interface User {
   permissions?: string[];
 }
 
+/**
+ * Backend'den gelen kullanıcı bilgisi (UserResponse)
+ */
+export interface UserResponse {
+  id: string;
+  userName: string;
+  email: string;
+  emailConfirmed: boolean;
+  roles: string[];
+}
+
 // ==================== Project Types ====================
 
 export interface Project {
@@ -21,9 +32,13 @@ export interface Project {
   title: string;
   description?: string;
   isActive: boolean;
+  status?: 'Active' | 'Archived'; // Frontend'de kullanılan status (isActive'den türetilir)
   startedDate: string;
   createdAt: string;
   updatedAt: string;
+  ownerId?: string; // Projeyi oluşturan kullanıcının ID'si
+  ownerEmail?: string; // Projeyi oluşturan kullanıcının email'i
+  ownerName?: string; // Projeyi oluşturan kullanıcının adı
 }
 
 export interface CreateProjectRequest {
@@ -209,5 +224,79 @@ export interface ChangeTaskStateRequest {
 
 export interface AssignTaskRequest {
   assigneeId: string;
+}
+
+// ==================== Project Member & Invitation Types ====================
+
+/**
+ * Proje rolleri - Backend ProjectRole enum'u ile uyumlu
+ */
+export enum ProjectRole {
+  Viewer = 'Viewer',   // 1 - Sadece görüntüleme yetkisi
+  Member = 'Member',   // 2 - Düzenleme yetkisi
+  Owner = 'Owner',     // 5 - Tam yetki (proje sahibi)
+}
+
+/**
+ * Proje üyesi bilgileri
+ */
+export interface ProjectMember {
+  userId: string;
+  userName: string;
+  email: string;
+  role: ProjectRole;
+  joinedDate: string;
+}
+
+/**
+ * Proje davetiye bilgileri (liste için)
+ */
+export interface ProjectInvitation {
+  invitationId: string;
+  email: string;
+  role: ProjectRole;
+  status: 'Pending' | 'Accepted' | 'Cancelled' | 'Expired';
+  createdDate: string;
+  expiresAt: string;
+  acceptedAt?: string;
+  invitedByUserName: string;
+}
+
+/**
+ * Proje davetiye detayı (token ile getirilen)
+ */
+export interface ProjectInvitationDetail {
+  invitationId: string;
+  projectId: string;
+  projectTitle: string;
+  email: string;
+  role: ProjectRole;
+  expiresAt: string;
+  invitedByUserName: string;
+}
+
+/**
+ * Davetiye gönderme request'i
+ * Backend numeric role bekliyor (1=Viewer, 2=Member, 5=Owner)
+ */
+export interface InviteProjectMemberRequest {
+  email: string;
+  role: number; // Backend numeric role değeri
+}
+
+/**
+ * Davetiye gönderme response'u
+ */
+export interface InviteProjectMemberResponse {
+  invitationId: string;
+  email: string;
+  expiresAt: string;
+}
+
+/**
+ * Üye rolü güncelleme request'i
+ */
+export interface UpdateProjectMemberRoleRequest {
+  role: ProjectRole;
 }
 
