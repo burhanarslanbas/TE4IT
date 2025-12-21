@@ -10,8 +10,6 @@ namespace TE4IT.Application.Features.Education.Courses.Queries.GetCourses;
 public sealed class GetCoursesQueryHandler(
     ICourseReadRepository courseReadRepository,
     IEnrollmentReadRepository enrollmentReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
-    ICourseReadRepository courseReadRepository,
-    IEnrollmentReadRepository enrollmentReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
 {
     public async Task<PagedResult<CourseListItemResponse>> Handle(GetCoursesQuery request, CancellationToken cancellationToken)
     {
