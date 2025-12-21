@@ -1,12 +1,15 @@
 using MediatR;
 using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Courses;
 using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Enrollments;
+using TE4IT.Application.Abstractions.Persistence.Repositories.Education.Enrollments;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Education.Courses.Responses;
 
 namespace TE4IT.Application.Features.Education.Courses.Queries.GetCourses;
 
 public sealed class GetCoursesQueryHandler(
+    ICourseReadRepository courseReadRepository,
+    IEnrollmentReadRepository enrollmentReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
     ICourseReadRepository courseReadRepository,
     IEnrollmentReadRepository enrollmentReadRepository) : IRequestHandler<GetCoursesQuery, PagedResult<CourseListItemResponse>>
 {
