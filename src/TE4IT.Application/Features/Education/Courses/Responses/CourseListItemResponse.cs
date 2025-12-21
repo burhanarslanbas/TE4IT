@@ -10,7 +10,7 @@ public sealed class CourseListItemResponse
     public string Description { get; init; } = default!;
     public string? ThumbnailUrl { get; init; }
     public int? EstimatedDurationMinutes { get; init; }
-    public int StepCount { get; init; }
+    public int? StepCount { get; init; }
     public int EnrollmentCount { get; init; }
     public DateTime CreatedAt { get; init; }
 }

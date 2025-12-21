@@ -5,16 +5,16 @@ namespace TE4IT.Application.Features.Education.Progresses.Queries.GetUserProgres
 
 public sealed class GetUserProgressQueryHandler(ICurrentUser currentUser) : IRequestHandler<GetUserProgressQuery, UserProgressResponse>
 {
-    public async Task<UserProgressResponse> Handle(GetUserProgressQuery request, CancellationToken cancellationToken)
+    public Task<UserProgressResponse> Handle(GetUserProgressQuery request, CancellationToken cancellationToken)
     {
         var currentUserId = currentUser.Id ?? throw new UnauthorizedAccessException("Kullanıcı kimliği bulunamadı.");
 
         // TODO: ICourseProgressService ile progress hesaplanacak
         // Şimdilik basit bir response döndürüyoruz
-        return new UserProgressResponse
+        return Task.FromResult(new UserProgressResponse
         {
             UserId = currentUserId.Value,
             CourseProgresses = new List<CourseProgressItem>()
-        };
+        });
     }
 }

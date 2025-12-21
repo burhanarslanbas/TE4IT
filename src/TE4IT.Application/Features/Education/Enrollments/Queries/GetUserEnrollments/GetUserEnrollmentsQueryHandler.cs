@@ -26,6 +26,9 @@ public sealed class GetUserEnrollmentsQueryHandler(
             _ => enrollments.ToList()
         };
 
+        // DEBUG: Filtrelenmiş enrollment sayısını logla
+        Console.WriteLine($"[DEBUG] Filtered enrollments count: {filteredEnrollments.Count}");
+
         var result = new List<EnrollmentListItemResponse>();
 
         foreach (var enrollment in filteredEnrollments)

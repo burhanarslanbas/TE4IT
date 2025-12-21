@@ -10,8 +10,7 @@ public sealed class GetUserEnrollmentsQueryValidator : AbstractValidator<GetUser
     public GetUserEnrollmentsQueryValidator()
     {
         RuleFor(x => x.Status)
-            .Must(status => status == "active" || status == "completed" || status == "all")
-            .When(x => !string.IsNullOrEmpty(x.Status))
+            .Must(status => string.IsNullOrEmpty(status) || status == "active" || status == "completed" || status == "all")
             .WithMessage("Status 'active', 'completed' veya 'all' olmalıdır.");
     }
 }
