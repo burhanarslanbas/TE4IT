@@ -55,8 +55,8 @@ public sealed class ChangeTaskStateCommandHandler(
                 break;
             case TaskState.Completed:
                 if (!task.CanBeCompleted())
-                    throw new Domain.Exceptions.Common.BusinessRuleViolationException("Görev tamamlanamaz. Bloklayan bağımlılıklar var.");
-                task.Complete();
+                    throw new Domain.Exceptions.Common.BusinessRuleViolationException("Görev tamamlanamaz. Bloklayan bağımlılıklar var veya görev atanmamış.");
+                task.Complete(); // CompletionNote olmadan tamamla (eski API uyumluluğu için)
                 break;
             case TaskState.Cancelled:
                 task.Cancel();

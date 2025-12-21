@@ -2,10 +2,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TE4IT.Application.Common.Pagination;
-using TE4IT.Application.Features.UseCases.Commands.CreateUseCase;
-using TE4IT.Application.Features.UseCases.Queries.GetUseCaseById;
-using TE4IT.Application.Features.UseCases.Queries.ListUseCases;
 using TE4IT.Application.Features.UseCases.Responses;
+using Commands = TE4IT.Application.Features.UseCases.Commands;
+using Queries = TE4IT.Application.Features.UseCases.Queries;
 
 namespace TE4IT.API.Controllers;
 
@@ -32,7 +31,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        var query = new ListUseCasesQuery(moduleId, page, pageSize, isActive, search);
+        var query = new Queries.ListUseCases.ListUseCasesQuery(moduleId, page, pageSize, isActive, search);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -46,7 +45,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var query = new GetUseCaseByIdQuery(id);
+        var query = new Queries.GetUseCaseById.GetUseCaseByIdQuery(id);
         var result = await mediator.Send(query, ct);
         return Ok(result);
     }
@@ -56,7 +55,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpPost("modules/{moduleId:guid}")]
     [Authorize(Policy = "UseCaseCreate")]
-    [ProducesResponseType(typeof(CreateUseCaseCommandResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(Commands.CreateUseCase.CreateUseCaseCommandResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
@@ -64,7 +63,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
         [FromBody] CreateUseCaseRequest request,
         CancellationToken ct)
     {
-        var command = new CreateUseCaseCommand(moduleId, request.Title, request.Description, request.ImportantNotes);
+        var command = new Commands.CreateUseCase.CreateUseCaseCommand(moduleId, request.Title, request.Description, request.ImportantNotes);
         var result = await mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -82,7 +81,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
         [FromBody] UpdateUseCaseRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.UseCases.Commands.UpdateUseCase.UpdateUseCaseCommand(
+        var command = new Commands.UpdateUseCase.UpdateUseCaseCommand(
             id, request.Title, request.Description, request.ImportantNotes);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
@@ -102,7 +101,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
         [FromBody] ChangeUseCaseStatusRequest request,
         CancellationToken ct)
     {
-        var command = new TE4IT.Application.Features.UseCases.Commands.ChangeUseCaseStatus.ChangeUseCaseStatusCommand(id, request.IsActive);
+        var command = new Commands.ChangeUseCaseStatus.ChangeUseCaseStatusCommand(id, request.IsActive);
         var ok = await mediator.Send(command, ct);
         if (!ok) return NotFound();
         return NoContent();
@@ -117,7 +116,7 @@ public class UseCasesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var ok = await mediator.Send(new TE4IT.Application.Features.UseCases.Commands.DeleteUseCase.DeleteUseCaseCommand(id), ct);
+        var ok = await mediator.Send(new Commands.DeleteUseCase.DeleteUseCaseCommand(id), ct);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -137,4 +136,3 @@ public record UpdateUseCaseRequest(string Title, string? Description, string? Im
 /// Kullanım senaryosu durum değiştirme request DTO
 /// </summary>
 public record ChangeUseCaseStatusRequest(bool IsActive);
-

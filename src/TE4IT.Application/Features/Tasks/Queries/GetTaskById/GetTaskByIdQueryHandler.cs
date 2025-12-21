@@ -77,6 +77,8 @@ public sealed class GetTaskByIdQueryHandler(
             ImportantNotes = task.ImportantNotes,
             StartedDate = task.StartedDate,
             DueDate = task.DueDate,
+            CompletionNote = task.CompletionNote,
+            CompletedDate = task.CompletedDate,
             TaskType = task.TaskType,
             TaskState = task.TaskState,
             Relations = relations

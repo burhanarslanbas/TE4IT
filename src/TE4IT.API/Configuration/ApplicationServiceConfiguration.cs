@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using TE4IT.Application;
 using TE4IT.Infrastructure;
+using TE4IT.Persistence.EducationManagement.DependencyInjection;
 using TE4IT.Persistence.TaskManagement.ServiceRegistrations;
 
 namespace TE4IT.API.Configuration;
@@ -30,6 +31,9 @@ public static class ApplicationServiceConfiguration
                                     configuration["CONNECTION_STRING"];
                 opt.UseNpgsql(connectionString);
             });
+
+            // Education modülü için MongoDB persistence kaydı
+            services.AddEducationMongo(configuration);
         }
 
         return services;

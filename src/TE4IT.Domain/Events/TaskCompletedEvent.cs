@@ -16,6 +16,7 @@ public class TaskCompletedEvent : IDomainEvent
     public Guid UseCaseId { get; }
     public string TaskTitle { get; }
     public TaskType TaskType { get; }
+    public string? CompletionNote { get; }
     public DateTime CompletedAt { get; }
 
     public TaskCompletedEvent(
@@ -23,7 +24,8 @@ public class TaskCompletedEvent : IDomainEvent
         Guid userId,
         Guid useCaseId,
         string taskTitle,
-        TaskType taskType)
+        TaskType taskType,
+        string? completionNote = null)
     {
         EventId = Guid.NewGuid();
         OccurredAt = DateTime.UtcNow;
@@ -34,5 +36,6 @@ public class TaskCompletedEvent : IDomainEvent
         UseCaseId = useCaseId;
         TaskTitle = taskTitle;
         TaskType = taskType;
+        CompletionNote = completionNote;
     }
 }

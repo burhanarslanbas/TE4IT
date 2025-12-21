@@ -9,4 +9,3 @@ public enum ProjectRole
     Member = 2,  // Düzenleme yetkisi
     Owner = 5    // Proje sahibi (tam yetki)
 }
-

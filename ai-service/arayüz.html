@@ -1,45 +1,193 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="utf-8">
-  <title>Kendi Fikrine Göre Roadmap Oluşturucu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Roadmap Generator | Cloud Ready</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input, textarea, button { width: 100%; padding: 8px; font-size: 1rem; }
-    textarea { min-height: 100px; resize: vertical; }
-    button { margin-top: 20px; background: #0d47a1; color: #fff; border: none; cursor: pointer; }
-    button:disabled { background: #90caf9; }
-    pre { background: #f5f5f5; padding: 15px; white-space: pre-wrap; }
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid var(--border);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-weight: 600;
+      background: linear-gradient(to right, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+      font-size: 1.8rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: white;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .api-config {
+      background: rgba(99, 102, 241, 0.1);
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px dashed var(--primary);
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    pre {
+      background: #020617;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      margin-top: 2rem;
+      max-height: 400px;
+      color: #10b981;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slider-val {
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 20px;
+    }
   </style>
 </head>
+
 <body>
 
-  <h2>Kendi Proje Fikrine Göre Roadmap Oluştur</h2>
+  <div class="container">
+    <h2>AI Roadmap Generator</h2>
 
-  <label>Proje Başlığı</label>
-  <input id="title" type="text" placeholder="Örn: chatbot" value="chatbot">
+    <div class="api-config">
+      <label>API URL (Render URL'inizi buraya yapıştırın)</label>
+      <input id="apiUrl" type="text" placeholder="https://multi-source-search-api.onrender.com"
+        value="http://127.0.0.1:8000">
+    </div>
 
-  <label>Proje Açıklaması (ne yapmak istediğini yaz)</label>
-  <textarea id="desc" placeholder="Örn: Kendimi tanıtan bir chatbot yapmak istiyorum"></textarea>
+    <div class="form-group">
+      <label>Proje Başlığı</label>
+      <input id="title" type="text" placeholder="Örn: E-ticaret Botu" value="chatbot">
+    </div>
 
-  <label>Kaç benzer proje örneği incelensin?</label>
-  <input id="max" type="range" min="1" max="10" value="3">
-  <span id="maxVal">3</span>
+    <div class="form-group">
+      <label>Proje Açıklaması</label>
+      <textarea id="desc" placeholder="Ne yapmak istediğinizi detaylandırın..."></textarea>
+    </div>
 
-  <button id="run">Roadmap’i Oluştur</button>
+    <div class="form-group">
+      <label>Benzer Proje Sayısı</label>
+      <div class="slider-container">
+        <input id="max" type="range" min="1" max="10" value="3">
+        <span id="maxVal" class="slider-val">3</span>
+      </div>
+    </div>
 
-  <pre id="output">Sonuç burada görünecek…</pre>
+    <button id="run">Yol Haritasını Oluştur</button>
+
+    <pre id="output">Sonuçlar burada analiz edilecek...</pre>
+  </div>
 
   <script>
     const maxSlider = document.getElementById('max');
-    const maxVal    = document.getElementById('maxVal');
+    const maxVal = document.getElementById('maxVal');
     maxSlider.oninput = () => maxVal.textContent = maxSlider.value;
 
     document.getElementById('run').onclick = async () => {
       const btn = document.getElementById('run');
+      const output = document.getElementById('output');
+      const baseUrl = document.getElementById('apiUrl').value.trim().replace(/\/$/, "");
+
       btn.disabled = true;
-      btn.textContent = 'Oluşturuluyor…';
+      btn.textContent = 'Yapay Zeka Analiz Ediyor...';
+      output.textContent = 'Veriler toplanıyor ve yol haritası oluşturuluyor, lütfen bekleyin...';
 
       const payload = {
         title: document.getElementById('title').value.trim(),
@@ -48,22 +196,26 @@
       };
 
       try {
-        const res = await fetch('http://127.0.0.1:8000/plan/from-search', {
+        const res = await fetch(`${baseUrl}/plan/from-search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error('HTTP hatası ' + res.status);
+
+        if (!res.ok) throw new Error(`Sunucu Hatası: ${res.status}`);
+
         const data = await res.json();
-        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        output.textContent = JSON.stringify(data, null, 2);
       } catch (err) {
-        document.getElementById('output').textContent = 'Hata: ' + err;
+        output.textContent = 'Hata Oluştu: ' + err.message + '\n\nİpucu: API URL\'nin doğru olduğundan ve sunucunun çalıştığından emin olun.';
+        output.style.color = '#ef4444';
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Roadmap’i Oluştur';
+        btn.textContent = 'Yol Haritasını Oluştur';
       }
     };
   </script>
 
 </body>
+
 </html>

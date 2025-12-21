@@ -22,9 +22,12 @@ public sealed class ChangeProjectStatusCommandHandler(
         var project = await readRepository.GetByIdAsync(request.ProjectId, cancellationToken);
         if (project is null) return false;
 
-        // Erişim kontrolü: Kullanıcının projeyi düzenleme yetkisi var mı?
-        if (!userPermissionService.CanEditProject(currentUserId, project))
-            throw new ProjectAccessDeniedException(request.ProjectId, currentUserId.Value, "Proje durumunu değiştirme yetkiniz bulunmamaktadır.");
+        // Erişim kontrolü: Sadece projeyi oluşturan kişi veya sistem yöneticisi durumu değiştirebilir
+        var isSystemAdmin = userPermissionService.IsSystemAdministrator(currentUserId);
+        var isCreator = project.CreatorId == currentUserId;
+        
+        if (!isSystemAdmin && !isCreator)
+            throw new ProjectAccessDeniedException(request.ProjectId, currentUserId.Value, "Proje durumunu değiştirme yetkiniz bulunmamaktadır. Sadece projeyi oluşturan kişi durumu değiştirebilir.");
 
         project.ChangeStatus(request.IsActive);
         writeRepository.Update(project, cancellationToken);

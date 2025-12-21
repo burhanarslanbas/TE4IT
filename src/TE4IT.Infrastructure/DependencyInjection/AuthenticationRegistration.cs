@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using TE4IT.Infrastructure.Auth.Services;
@@ -73,6 +74,11 @@ public static class AuthenticationRegistration
         {
             audience = "te4it-api";
         }
+        
+        // Signing key'i oluştur ve KeyId ekle (token oluşturma ile aynı olmalı)
+        var symmetricKey = signingKey.CreateSymmetricKey();
+        symmetricKey.KeyId = "default-key";
+        
         services
             .AddAuthentication(options =>
             {
@@ -93,18 +99,36 @@ public static class AuthenticationRegistration
                     RoleClaimType = ClaimTypes.Role,
                     ValidIssuer = issuer,
                     ValidAudience = audience,
-                    IssuerSigningKey = signingKey.CreateSymmetricKey(),
+                    IssuerSigningKey = symmetricKey,
                     RequireExpirationTime = true,
                     RequireSignedTokens = true
                 };
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnAuthenticationFailed = context =>
+                    {
+                        var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                        var logger = loggerFactory.CreateLogger("JwtBearer");
+                        logger.LogError(context.Exception, "JWT Authentication failed: {Error}", context.Exception?.Message);
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = context =>
+                    {
+                        var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                        var logger = loggerFactory.CreateLogger("JwtBearer");
+                        logger.LogWarning("JWT Challenge: {Error}, {ErrorDescription}", context.Error, context.ErrorDescription);
+                        return Task.CompletedTask;
+                    },
                     OnTokenValidated = async context =>
                     {
+                        var loggerFactory = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                        var logger = loggerFactory.CreateLogger("JwtBearer");
+                        
                         var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                         if (!Guid.TryParse(userIdClaim, out var userId))
                         {
+                            logger.LogWarning("Invalid token subject: {UserIdClaim}", userIdClaim);
                             context.Fail("Invalid token subject");
                             return;
                         }
@@ -113,12 +137,14 @@ public static class AuthenticationRegistration
                         var user = await userManager.FindByIdAsync(userId.ToString());
                         if (user is null)
                         {
+                            logger.LogWarning("User not found: {UserId}", userId);
                             context.Fail("User not found");
                             return;
                         }
 
                         if (await userManager.IsLockedOutAsync(user))
                         {
+                            logger.LogWarning("User is locked out: {UserId}", userId);
                             context.Fail("User is locked out");
                             return;
                         }
@@ -132,9 +158,13 @@ public static class AuthenticationRegistration
                             !string.IsNullOrEmpty(tokenVersion) &&
                             tokenVersion != currentVersion)
                         {
+                            logger.LogWarning("Permissions version mismatch for user {UserId}. Token version: {TokenVersion}, Current version: {CurrentVersion}", 
+                                userId, tokenVersion, currentVersion);
                             context.Fail("Permissions version mismatch");
                             return;
                         }
+                        
+                        logger.LogDebug("Token validated successfully for user {UserId}", userId);
                     }
                 };
             });
@@ -301,6 +331,68 @@ public static class AuthenticationRegistration
                 ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
                 ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
                 ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.TaskRelation.Delete)
+            ));
+
+            // Education policies
+            o.AddPolicy("CourseCreate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.CourseCreate)
+            ));
+            o.AddPolicy("CourseUpdate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.CourseUpdate)
+            ));
+            o.AddPolicy("CourseDelete", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.CourseDelete)
+            ));
+            o.AddPolicy("CourseView", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.CourseView)
+            ));
+            o.AddPolicy("RoadmapCreate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.RoadmapCreate)
+            ));
+            o.AddPolicy("RoadmapUpdate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.RoadmapUpdate)
+            ));
+            o.AddPolicy("RoadmapDelete", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.RoadmapDelete)
+            ));
+            o.AddPolicy("RoadmapView", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.RoadmapView)
+            ));
+            o.AddPolicy("ProgressView", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.ProgressView)
+            ));
+            o.AddPolicy("ProgressUpdate", policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Administrator) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.OrganizationManager) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.TeamLead) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Employee) ||
+                ctx.User.IsInRole(TE4IT.Domain.Constants.RoleNames.Trial) ||
+                ctx.User.HasClaim("permission", TE4IT.Domain.Constants.Permissions.Education.ProgressUpdate)
             ));
         });
         return services;

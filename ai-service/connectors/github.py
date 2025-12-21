@@ -81,8 +81,10 @@ class GitHubConnector:
             return cache[cache_key]
         
         url = f"{self.base_url}/search/repositories"
+        # GitHub search query limit is 256 characters. Truncate to be safe.
+        safe_query = query[:200] if query else ""
         params = {
-            "q": query,
+            "q": safe_query,
             "sort": "stars",
             "order": "desc",
             "per_page": min(max_results, 100)

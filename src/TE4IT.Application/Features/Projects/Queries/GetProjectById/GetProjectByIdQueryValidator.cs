@@ -6,7 +6,7 @@ public sealed class GetProjectByIdQueryValidator : AbstractValidator<GetProjectB
 {
     public GetProjectByIdQueryValidator()
     {
-        RuleFor(x => x.ProjectId)
+        RuleFor(x => x.Id)
             .NotEmpty()
             .WithMessage("Proje ID'si zorunludur.");
     }

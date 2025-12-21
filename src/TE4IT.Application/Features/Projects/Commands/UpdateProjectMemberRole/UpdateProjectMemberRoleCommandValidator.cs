@@ -10,17 +10,17 @@ public sealed class UpdateProjectMemberRoleCommandValidator : AbstractValidator<
     {
         RuleFor(x => x.ProjectId)
             .NotEmpty()
-            .WithMessage("Proje ID'si zorunludur.");
+            .WithMessage("Project ID is required.");
 
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .WithMessage("Kullanıcı ID'si zorunludur.");
+            .WithMessage("User ID is required.");
 
-        RuleFor(x => x.NewRole)
+        RuleFor(x => x.Role)
             .IsInEnum()
-            .WithMessage("Geçerli bir rol seçilmelidir.")
+            .WithMessage("A valid role must be selected.")
             .Must(role => role == ProjectRole.Member || role == ProjectRole.Viewer)
-            .WithMessage("Sadece Member veya Viewer rolü atanabilir. Owner rolü değiştirilemez.");
+            .WithMessage("Only Member or Viewer role can be assigned. Owner role cannot be changed.");
     }
 }
 

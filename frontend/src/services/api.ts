@@ -1,10 +1,23 @@
 /**
  * TE4IT API Servisleri
  * Backend API ile iletişim için temel konfigürasyon ve yardımcı fonksiyonlar
+ * Güvenlik iyileştirmeleri ile
  */
 
 // Import API configuration
 import { API_BASE_URL } from '../config/config';
+import type { IApiClient } from '../core/interfaces/IApiClient';
+import { ApiError as CoreApiError } from '../core/errors/ApiError';
+import {
+  getToken,
+  saveToken,
+  getRefreshToken,
+  saveRefreshToken,
+  clearTokens,
+  isTokenExpired,
+  isTokenValid,
+} from '../utils/tokenManager';
+import { AuthService } from './auth';
 
 // API Response tipleri
 export interface ApiResponse<T = any> {
@@ -14,55 +27,90 @@ export interface ApiResponse<T = any> {
   errors?: string[];
 }
 
-// API Error tipi
-export interface ApiError {
-  message: string;
-  status?: number;
-  errors?: string[];
-}
+// Re-export ApiError for backward compatibility
+export { ApiError } from '../core/errors/ApiError';
 
 /**
  * API istekleri için temel fetch wrapper
  * Tüm API çağrıları için ortak hata yönetimi ve token ekleme
+ * Güvenlik iyileştirmeleri: Token expiration kontrolü, otomatik yenileme, 401/403 handling
  */
-export class ApiClient {
+export class ApiClient implements IApiClient {
   private baseURL: string;
-  private token: string | null = null;
+  private isRefreshing = false;
+  private refreshPromise: Promise<string> | null = null;
+  private onUnauthorizedCallback?: () => void;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
-    // localStorage'dan token'ı yükle
-    this.loadToken();
   }
 
   /**
-   * localStorage'dan JWT token'ı yükle
+   * Unauthorized callback'i ayarla (logout için)
    */
-  private loadToken(): void {
-    this.token = localStorage.getItem('te4it_token');
+  setUnauthorizedCallback(callback: () => void): void {
+    this.onUnauthorizedCallback = callback;
   }
 
   /**
-   * JWT token'ı kaydet
+   * JWT token'ı kaydet (sessionStorage kullan)
    */
-  setToken(token: string): void {
-    this.token = token;
-    localStorage.setItem('te4it_token', token);
+  setToken(token: string, expiresAt?: string): void {
+    saveToken(token, expiresAt);
   }
 
   /**
    * JWT token'ı temizle
    */
   clearToken(): void {
-    this.token = null;
-    localStorage.removeItem('te4it_token');
+    clearTokens();
   }
 
   /**
    * Token'ın geçerli olup olmadığını kontrol et
    */
   isAuthenticated(): boolean {
-    return !!this.token;
+    return isTokenValid();
+  }
+
+  /**
+   * Token'ı yenile (otomatik)
+   */
+  private async refreshToken(): Promise<string> {
+    // Eğer zaten refresh işlemi devam ediyorsa, o promise'i döndür
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const refreshTokenValue = getRefreshToken();
+        if (!refreshTokenValue) {
+          throw new CoreApiError('Refresh token bulunamadı', 401);
+        }
+
+        const response = await AuthService.refreshAccessToken(refreshTokenValue);
+        
+        // Yeni token'ları kaydet
+        this.setToken(response.accessToken, response.expiresAt);
+        saveRefreshToken(response.refreshToken);
+
+        return response.accessToken;
+      } catch (error) {
+        // Refresh başarısız, logout yap
+        this.clearToken();
+        if (this.onUnauthorizedCallback) {
+          this.onUnauthorizedCallback();
+        }
+        throw error;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   /**
@@ -78,12 +126,27 @@ export class ApiClient {
 
   /**
    * API isteği gönder
+   * Güvenlik: Token expiration kontrolü, otomatik yenileme, 401/403 handling
    */
   async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
+      // Token'ı kontrol et ve gerekirse yenile
+      let token = getToken();
+      
+      if (token && isTokenExpired(token)) {
+        // Token süresi dolmuş, yenile
+        try {
+          token = await this.refreshToken();
+        } catch (refreshError) {
+          // Refresh başarısız, logout yapıldı
+          throw new CoreApiError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.', 401);
+        }
+      }
+
       // URL'yi tamamla (çift slash sorununu önle)
       const url = this.joinUrl(this.baseURL, endpoint);
 
@@ -94,8 +157,8 @@ export class ApiClient {
       };
 
       // Eğer token varsa Authorization header'ına ekle
-      if (this.token) {
-        headers.Authorization = `Bearer ${this.token}`;
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
       }
 
       // Fetch isteği gönder
@@ -105,15 +168,85 @@ export class ApiClient {
       });
 
       // Response'u parse et
-      const data = await response.json();
+      let data: any;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          // JSON parse hatası
+          throw new CoreApiError('Sunucudan geçersiz yanıt alındı', response.status);
+        }
+      } else {
+        // JSON değilse text olarak oku
+        const text = await response.text();
+        data = { message: text || 'Bir hata oluştu' };
+      }
 
       // HTTP status kodunu kontrol et
       if (!response.ok) {
-        throw new ApiError(
-          data.message || 'Bir hata oluştu',
-          response.status,
-          data.errors
-        );
+        // Backend bazen { message: { message: string, errors: [...] } } gibi dönebiliyor.
+        const rawMessage = data?.message;
+        const message =
+          typeof rawMessage === 'string'
+            ? rawMessage
+            : typeof rawMessage?.message === 'string'
+              ? rawMessage.message
+              : 'Bir hata oluştu';
+
+        const rawErrors = data?.errors ?? rawMessage?.errors;
+        let errors: string[] | undefined;
+        if (Array.isArray(rawErrors)) {
+          if (rawErrors.length === 0) {
+            errors = undefined;
+          } else if (typeof rawErrors[0] === 'string') {
+            errors = rawErrors as string[];
+          } else if (typeof rawErrors[0] === 'object' && rawErrors[0] !== null) {
+            errors = (rawErrors as any[]).map((e) => {
+              if (typeof e?.message === 'string') {
+                return typeof e?.field === 'string' ? `${e.field}: ${e.message}` : e.message;
+              }
+              try {
+                return JSON.stringify(e);
+              } catch {
+                return 'Bir hata oluştu';
+              }
+            });
+          }
+        }
+
+        const apiError = new CoreApiError(message, response.status, errors);
+
+        // 401 Unauthorized - Token geçersiz veya süresi dolmuş
+        if (response.status === 401 && retryOn401) {
+          try {
+            // Token'ı yenile ve isteği tekrar dene
+            const newToken = await this.refreshToken();
+            
+            // Yeni token ile isteği tekrar gönder (sadece bir kez)
+            return this.request<T>(endpoint, options, false);
+          } catch (refreshError) {
+            // Refresh başarısız, logout yap
+            this.clearToken();
+            if (this.onUnauthorizedCallback) {
+              this.onUnauthorizedCallback();
+            }
+            throw new CoreApiError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.', 401);
+          }
+        }
+
+        // 403 Forbidden - Yetki yok
+        if (response.status === 403) {
+          throw new CoreApiError(
+            'Bu işlem için yetkiniz bulunmamaktadır.',
+            403,
+            data.errors,
+            'FORBIDDEN'
+          );
+        }
+
+        throw apiError;
       }
 
       return {
@@ -123,13 +256,25 @@ export class ApiClient {
       };
     } catch (error) {
       // Network hatası veya parse hatası
-      if (error instanceof ApiError) {
+      if (error instanceof CoreApiError) {
         throw error;
       }
 
-      throw new ApiError(
-        'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.',
-        0
+      // Network hatası
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new CoreApiError(
+          'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.',
+          0,
+          undefined,
+          'NETWORK_ERROR'
+        );
+      }
+
+      throw new CoreApiError(
+        'Beklenmeyen bir hata oluştu',
+        0,
+        undefined,
+        'UNKNOWN_ERROR'
       );
     }
   }
@@ -181,16 +326,3 @@ export class ApiClient {
 
 // Global API client instance
 export const apiClient = new ApiClient();
-
-// Custom Error class
-export class ApiError extends Error {
-  public status?: number;
-  public errors?: string[];
-
-  constructor(message: string, status?: number, errors?: string[]) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.errors = errors;
-  }
-}

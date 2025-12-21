@@ -3,7 +3,6 @@ using TE4IT.Abstractions.Persistence.Repositories.Projects;
 using TE4IT.Application.Abstractions.Auth;
 using TE4IT.Application.Common.Pagination;
 using TE4IT.Application.Features.Projects.Responses;
-using TE4IT.Domain.Constants;
 using TE4IT.Domain.Services;
 
 namespace TE4IT.Application.Features.Projects.Queries.ListProjects;

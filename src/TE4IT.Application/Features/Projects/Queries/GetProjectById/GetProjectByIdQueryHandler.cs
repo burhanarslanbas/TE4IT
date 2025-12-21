@@ -17,13 +17,13 @@ public sealed class GetProjectByIdQueryHandler(
     {
         var currentUserId = currentUser.Id ?? throw new UnauthorizedAccessException();
 
-        var project = await projectRepository.GetByIdAsync(request.ProjectId, cancellationToken);
+        var project = await projectRepository.GetByIdAsync(request.Id, cancellationToken);
         if (project is null)
-            throw new ResourceNotFoundException("Project", request.ProjectId);
+            throw new ResourceNotFoundException("Project", request.Id);
 
         // Erişim kontrolü
         if (!userPermissionService.CanAccessProject(currentUserId, project))
-            throw new ProjectAccessDeniedException(request.ProjectId, currentUserId.Value, "Projeye erişim yetkiniz bulunmamaktadır.");
+            throw new ProjectAccessDeniedException(request.Id, currentUserId.Value, "Projeye erişim yetkiniz bulunmamaktadır.");
 
         return new ProjectResponse
         {

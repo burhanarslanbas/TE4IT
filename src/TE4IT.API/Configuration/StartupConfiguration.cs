@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using TE4IT.Infrastructure.Auth.Services;
 using TE4IT.Persistence.Common.Contexts;
 
@@ -21,6 +23,9 @@ public static class StartupConfiguration
         
         // EF Core Model Warm-up - İlk sorguyu burada yaparak model'i önceden oluştur
         await app.WarmupDbContextAsync();
+        
+        // MongoDB Warm-up - İlk bağlantıyı burada kurarak cold start'ı azalt
+        await app.WarmupMongoDbAsync();
     }
     
     private static async Task WarmupDbContextAsync(this WebApplication app)
@@ -82,6 +87,73 @@ public static class StartupConfiguration
             var logger = app.Services.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "Database seeding failed");
             throw;
+        }
+    }
+    
+    private static async Task WarmupMongoDbAsync(this WebApplication app)
+    {
+        try
+        {
+            // Test ortamında warm-up'ı atla
+            var environment = app.Environment.EnvironmentName;
+            if (environment == "Testing")
+            {
+                return;
+            }
+
+            using var scope = app.Services.CreateScope();
+            var logger = scope.ServiceProvider.GetService<ILogger<Program>>();
+            
+            // MongoDB client'ı al (singleton olduğu için direkt alabiliriz)
+            var mongoClient = scope.ServiceProvider.GetService<IMongoClient>();
+            var mongoDatabase = scope.ServiceProvider.GetService<IMongoDatabase>();
+            
+            if (mongoClient == null || mongoDatabase == null)
+            {
+                logger?.LogDebug("MongoDB services not registered, skipping warm-up.");
+                return;
+            }
+
+            logger?.LogInformation("Starting MongoDB warm-up...");
+            
+            // MongoDB bağlantısını test et ve ilk sorguyu yap
+            // Bu, connection pool'un oluşturulmasını ve DNS çözümlemesini tetikler
+            // DNS çözümleme sorunları olabileceği için timeout'u artırıyoruz
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            
+            try
+            {
+                await mongoClient.ListDatabaseNamesAsync(cts.Token);
+                
+                // Database'in erişilebilir olduğunu doğrula
+                await mongoDatabase.RunCommandAsync<BsonDocument>(
+                    new BsonDocument("ping", 1), 
+                    cancellationToken: cts.Token);
+                
+                logger?.LogInformation("MongoDB warm-up completed successfully.");
+            }
+            catch (OperationCanceledException)
+            {
+                logger?.LogWarning("MongoDB warm-up timed out after 60 seconds. This may indicate DNS or network issues.");
+                throw; // Timeout durumunda exception'ı yeniden fırlat
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("MongoDB warm-up timed out after 60 seconds. This may indicate DNS or network issues. " +
+                            "Application will continue, but MongoDB operations may fail. " +
+                            "Please check your MongoDB connection string and network connectivity.");
+            // Warm-up başarısız olsa bile startup'ı durdurmuyoruz
+        }
+        catch (Exception ex)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "MongoDB warm-up failed, but continuing startup. " +
+                            "This may indicate DNS resolution issues or network connectivity problems. " +
+                            "First request may be slower or may fail. " +
+                            "Please check your MongoDB connection string and network connectivity.");
+            // Warm-up başarısız olsa bile startup'ı durdurmuyoruz
         }
     }
 }

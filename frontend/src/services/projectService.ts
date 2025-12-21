@@ -1,14 +1,68 @@
 /**
- * Project API Servisleri
+ * Project Service
+ * Project ile ilgili tüm API çağrıları
  */
+
 import { apiClient, ApiResponse } from './api';
-import type {
+import {
   Project,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectListResponse,
+  PaginationParams,
+  PaginationResponse,
   ProjectFilters,
+  ChangeStatusRequest,
+  Module,
+  ModuleFilters,
+  CreateModuleRequest,
+  ProjectMember,
+  ProjectInvitation,
+  InviteProjectMemberRequest,
+  InviteProjectMemberResponse,
+  UpdateProjectMemberRoleRequest,
+  ProjectRole,
 } from '../types';
+import { numericToProjectRole } from '../utils/projectRoleMapping';
+
+// Backend response type (IsActive boolean olarak geliyor)
+interface BackendProject {
+  id: string;
+  title: string;
+  description?: string;
+  isActive: boolean;
+  startedDate: string;
+  createdDate?: string;
+  updatedDate?: string;
+  creatorId?: string; // Projeyi oluşturan kullanıcının ID'si
+  creatorEmail?: string; // Projeyi oluşturan kullanıcının email'i
+  creatorName?: string; // Projeyi oluşturan kullanıcının adı
+}
+
+interface BackendProjectListResponse {
+  items: BackendProject[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/**
+ * Backend Project response'unu frontend Project tipine çevir
+ */
+function mapBackendProjectToFrontend(backendProject: BackendProject): Project {
+  return {
+    id: backendProject.id,
+    title: backendProject.title,
+    description: backendProject.description,
+    status: backendProject.isActive ? 'Active' : 'Archived',
+    startedDate: backendProject.startedDate,
+    createdAt: backendProject.createdDate || backendProject.startedDate,
+    updatedAt: backendProject.updatedDate || backendProject.startedDate,
+    ownerId: backendProject.creatorId,
+    ownerEmail: backendProject.creatorEmail,
+    ownerName: backendProject.creatorName,
+  };
+}
 
 export class ProjectService {
   /**
@@ -25,10 +79,17 @@ export class ProjectService {
     const queryString = params.toString();
     const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ''}`;
     
-    const response = await apiClient.get<ProjectListResponse>(endpoint);
+    const response = await apiClient.get<BackendProjectListResponse>(endpoint);
     
     if (response.success && response.data) {
-      return response.data;
+      // Backend response'unu frontend tipine çevir
+      return {
+        items: response.data.items.map(mapBackendProjectToFrontend),
+        totalCount: response.data.totalCount,
+        page: response.data.page,
+        pageSize: response.data.pageSize,
+        totalPages: response.data.totalPages,
+      };
     }
     
     throw new Error('Projeler yüklenemedi');
@@ -38,10 +99,11 @@ export class ProjectService {
    * Proje detayını getir
    */
   static async getProject(projectId: string): Promise<Project> {
-    const response = await apiClient.get<Project>(`/api/v1/projects/${projectId}`);
+    const response = await apiClient.get<BackendProject>(`/api/v1/projects/${projectId}`);
     
     if (response.success && response.data) {
-      return response.data;
+      // Backend response'unu frontend tipine çevir
+      return mapBackendProjectToFrontend(response.data);
     }
     
     throw new Error('Proje bulunamadı');
@@ -51,23 +113,35 @@ export class ProjectService {
    * Yeni proje oluştur
    */
   static async createProject(data: CreateProjectRequest): Promise<Project> {
-    const response = await apiClient.post<Project>('/api/v1/projects', data);
-    
-    if (response.success && response.data) {
-      return response.data;
+    try {
+      const response = await apiClient.post<BackendProject>('/api/v1/projects', data);
+      
+      if (response.success && response.data) {
+        // Backend response'unu frontend tipine çevir
+        return mapBackendProjectToFrontend(response.data);
+      }
+      
+      // Response başarılı ama data yoksa
+      throw new Error(response.message || 'Proje oluşturulamadı');
+    } catch (error: any) {
+      // ApiError ise mesajını kullan
+      if (error instanceof Error) {
+        throw error;
+      }
+      // Diğer hatalar için genel mesaj
+      throw new Error(error?.message || 'Proje oluşturulamadı. Lütfen tekrar deneyin.');
     }
-    
-    throw new Error('Proje oluşturulamadı');
   }
 
   /**
    * Proje güncelle
    */
   static async updateProject(projectId: string, data: UpdateProjectRequest): Promise<Project> {
-    const response = await apiClient.put<Project>(`/api/v1/projects/${projectId}`, data);
+    const response = await apiClient.put<BackendProject>(`/api/v1/projects/${projectId}`, data);
     
     if (response.success && response.data) {
-      return response.data;
+      // Backend response'unu frontend tipine çevir
+      return mapBackendProjectToFrontend(response.data);
     }
     
     throw new Error('Proje güncellenemedi');
@@ -75,9 +149,12 @@ export class ProjectService {
 
   /**
    * Proje durumunu değiştir (Active/Archived)
+   * Backend IsActive (boolean) bekliyor, bu yüzden status string'ini boolean'a çeviriyoruz
    */
   static async updateProjectStatus(projectId: string, status: 'Active' | 'Archived'): Promise<void> {
-    const response = await apiClient.patch(`/api/v1/projects/${projectId}/status`, { status });
+    // Backend IsActive (boolean) bekliyor, status string'ini boolean'a çevir
+    const isActive = status === 'Active';
+    const response = await apiClient.patch(`/api/v1/projects/${projectId}/status`, { IsActive: isActive });
     
     if (!response.success) {
       throw new Error('Proje durumu güncellenemedi');
@@ -86,12 +163,177 @@ export class ProjectService {
 
   /**
    * Proje sil
+   * @throws {Error} 409 - Proje içinde modüller var
+   * @throws {Error} 404 - Proje bulunamadı
+   * @throws {Error} 403 - Yetki yok
    */
   static async deleteProject(projectId: string): Promise<void> {
-    const response = await apiClient.delete(`/api/v1/projects/${projectId}`);
+    try {
+      console.log('[DELETE PROJECT] Starting delete for project:', projectId);
+      const response = await apiClient.delete(`/api/v1/projects/${projectId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Proje silinemedi');
+      }
+      
+      console.log('[DELETE PROJECT] Successfully deleted project:', projectId);
+    } catch (error: any) {
+      console.error('[DELETE PROJECT] Error:', error);
+      
+      // 409 Conflict - Alt öğeler var
+      if (error.statusCode === 409 || error.status === 409) {
+        throw new Error('Bu projeyi silebilmek için önce modülleri silmeniz gerekiyor.');
+      }
+      
+      // 404 Not Found - Zaten silinmiş
+      if (error.statusCode === 404 || error.status === 404) {
+        throw new Error('Proje bulunamadı. Zaten silinmiş olabilir.');
+      }
+      
+      // 403 Forbidden - Yetki yok
+      if (error.statusCode === 403 || error.status === 403) {
+        throw new Error('Bu projeyi silmek için yetkiniz bulunmamaktadır.');
+      }
+      
+      // Backend'den gelen hata mesajını koru
+      if (error.message) {
+        throw error;
+      }
+      
+      throw new Error('Proje silinemedi');
+    }
+  }
+
+  // ========== PROJECT MEMBERS ==========
+
+  /**
+   * Proje üyelerini listele
+   * @param projectId Proje ID'si
+   * @returns Proje üyeleri listesi
+   */
+  static async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
+    const response = await apiClient.get<any[]>(`/api/v1/projects/${projectId}/members`);
+    
+    if (response.success && response.data) {
+      // Backend'den gelen role'u normalize et (numeric ise string enum'a çevir)
+      return response.data.map((member) => {
+        let normalizedRole = member.role;
+        // Eğer role numeric ise, string enum'a çevir
+        if (typeof member.role === 'number') {
+          normalizedRole = numericToProjectRole(member.role);
+        }
+        return {
+          ...member,
+          role: normalizedRole as ProjectRole,
+        };
+      });
+    }
+    
+    throw new Error('Proje üyeleri yüklenemedi');
+  }
+
+  /**
+   * Proje üyesi rolünü güncelle
+   * @param projectId Proje ID'si
+   * @param userId Kullanıcı ID'si
+   * @param role Yeni rol
+   */
+  static async updateMemberRole(
+    projectId: string,
+    userId: string,
+    role: ProjectRole
+  ): Promise<void> {
+    const response = await apiClient.put(
+      `/api/v1/projects/${projectId}/members/${userId}/role`,
+      { role }
+    );
     
     if (!response.success) {
-      throw new Error('Proje silinemedi');
+      throw new Error('Üye rolü güncellenemedi');
+    }
+  }
+
+  /**
+   * Proje üyesini kaldır
+   * @param projectId Proje ID'si
+   * @param userId Kullanıcı ID'si
+   */
+  static async removeMember(projectId: string, userId: string): Promise<void> {
+    const response = await apiClient.delete(
+      `/api/v1/projects/${projectId}/members/${userId}`
+    );
+    
+    if (!response.success) {
+      throw new Error('Üye kaldırılamadı');
+    }
+  }
+
+  // ========== PROJECT INVITATIONS ==========
+
+  /**
+   * Projeye email ile davetiye gönder
+   * @param projectId Proje ID'si
+   * @param data Davetiye bilgileri (email, role)
+   * @returns Davetiye bilgileri (invitationId, email, expiresAt)
+   */
+  static async inviteProjectMember(
+    projectId: string,
+    data: InviteProjectMemberRequest
+  ): Promise<InviteProjectMemberResponse> {
+    const response = await apiClient.post<InviteProjectMemberResponse>(
+      `/api/v1/projects/${projectId}/invitations`,
+      data
+    );
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error('Davetiye gönderilemedi');
+  }
+
+  /**
+   * Proje davetiyelerini listele
+   * @param projectId Proje ID'si
+   * @param status Filtreleme için status (opsiyonel)
+   * @returns Davetiye listesi
+   */
+  static async getProjectInvitations(
+    projectId: string,
+    status?: 'Pending' | 'Accepted' | 'Cancelled' | 'Expired'
+  ): Promise<ProjectInvitation[]> {
+    const params = new URLSearchParams();
+    if (status) {
+      params.append('status', status);
+    }
+    
+    const queryString = params.toString();
+    const endpoint = `/api/v1/projects/${projectId}/invitations${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await apiClient.get<ProjectInvitation[]>(endpoint);
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error('Davetiyeler yüklenemedi');
+  }
+
+  /**
+   * Proje davetiyesini iptal et
+   * @param projectId Proje ID'si
+   * @param invitationId Davetiye ID'si
+   */
+  static async cancelInvitation(
+    projectId: string,
+    invitationId: string
+  ): Promise<void> {
+    const response = await apiClient.delete(
+      `/api/v1/projects/${projectId}/invitations/${invitationId}`
+    );
+    
+    if (!response.success) {
+      throw new Error('Davetiye iptal edilemedi');
     }
   }
 }

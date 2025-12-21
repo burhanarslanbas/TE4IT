@@ -1,14 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Logo } from "./logo";
 import { Button } from "./ui/button";
 import { ProfileInfo } from "./profile-sections/profile-info";
 import { SecuritySettings } from "./profile-sections/security-settings";
 import { AppSettings } from "./profile-sections/app-settings";
-import { User, Shield, Settings, LogOut, ArrowLeft, Menu, X, FolderKanban } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { User, Shield, Settings, LogOut, ArrowLeft, Menu, X, Folder } from "lucide-react";
 import { Toaster } from "./ui/sonner";
 import { toast } from "sonner@2.0.3";
+import { useLanguage } from "../contexts/LanguageContext";
 
 type SectionType = "profile" | "security" | "settings";
 
@@ -19,20 +20,21 @@ interface ProfilePageProps {
 
 export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<SectionType>("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    toast.info("Çıkış yapılıyor...", { duration: 1000 });
+    toast.info(t('profile.loggingOut'), { duration: 1000 });
     setTimeout(() => {
       onLogout();
     }, 1000);
   };
 
   const menuItems = [
-    { id: "profile" as SectionType, label: "Profilim", icon: User },
-    { id: "security" as SectionType, label: "Güvenlik", icon: Shield },
-    { id: "settings" as SectionType, label: "Ayarlar", icon: Settings },
+    { id: "profile" as SectionType, label: t('profile.menu.profile'), icon: User },
+    { id: "security" as SectionType, label: t('profile.menu.security'), icon: Shield },
+    { id: "settings" as SectionType, label: t('profile.menu.settings'), icon: Settings },
   ];
 
   const renderContent = () => {
@@ -87,10 +89,10 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/projects")}
-                className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#8B5CF6]/10 border border-[#8B5CF6]/30"
+                className="text-[#E5E7EB] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
               >
-                <FolderKanban className="w-4 h-4 mr-2" />
-                Projects
+                <Folder className="w-4 h-4 mr-2" />
+                {t('profile.projects')}
               </Button>
               <Button
                 variant="ghost"
@@ -99,7 +101,7 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
                 className="text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-[#8B5CF6]/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Ana Sayfa
+                {t('profile.home')}
               </Button>
               <Button
                 variant="ghost"
@@ -108,7 +110,7 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
                 className="text-[#EF4444] hover:text-[#DC2626] hover:bg-[#EF4444]/10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Çıkış Yap
+                {t('nav.logout')}
               </Button>
             </div>
           </div>
@@ -166,10 +168,10 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
               <div className="mt-8 p-4 bg-[#0D1117] rounded-xl border border-[#30363D]/30">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
-                  <span className="text-xs text-[#9CA3AF]">Hesap Durumu</span>
+                  <span className="text-xs text-[#9CA3AF]">{t('profile.accountStatus')}</span>
                 </div>
-                <p className="text-sm text-[#E5E7EB]">Premium Üye</p>
-                <p className="text-xs text-[#6B7280] mt-1">Son giriş: Bugün, 14:32</p>
+                <p className="text-sm text-[#E5E7EB]">{t('profile.premiumMember')}</p>
+                <p className="text-xs text-[#6B7280] mt-1">{t('profile.lastLogin')}</p>
               </div>
             </div>
           </motion.aside>
@@ -195,9 +197,9 @@ export function ProfilePage({ onNavigateToHome, onLogout }: ProfilePageProps) {
                 {menuItems.find(item => item.id === activeSection)?.label}
               </h1>
               <p className="text-[#9CA3AF]">
-                {activeSection === "profile" && "Profil bilgilerinizi görüntüleyin ve düzenleyin"}
-                {activeSection === "security" && "Hesap güvenliğinizi yönetin"}
-                {activeSection === "settings" && "Uygulama tercihlerinizi özelleştirin"}
+                {activeSection === "profile" && t('profile.subtitle.profile')}
+                {activeSection === "security" && t('profile.subtitle.security')}
+                {activeSection === "settings" && t('profile.subtitle.settings')}
               </p>
             </div>
 

@@ -18,7 +18,7 @@ public abstract class AggregateRoot : BaseEntity
     /// Domain event ekler
     /// </summary>
     /// <param name="domainEvent">Eklenecek domain event</param>
-    protected void AddDomainEvent(IDomainEvent domainEvent)
+    public void AddDomainEvent(IDomainEvent domainEvent)
     {
         _domainEvents.Add(domainEvent);
     }
