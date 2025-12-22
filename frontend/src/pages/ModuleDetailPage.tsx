@@ -242,7 +242,7 @@ export function ModuleDetailPage() {
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link to="/projects" className="hover:text-[#8B5CF6]">
-                    Projects
+                    Projeler
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -278,7 +278,7 @@ export function ModuleDetailPage() {
             className="text-[#E5E7EB] hover:bg-[#2DD4BF]/10 border border-[#30363D]/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Project
+            Projeye Dön
           </Button>
         </motion.div>
 
@@ -286,17 +286,24 @@ export function ModuleDetailPage() {
         <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Module: {module.title}</h1>
+              <h1 className="text-3xl font-bold mb-2">Modül: {module.title}</h1>
               <div className="flex items-center gap-3">
                 <Badge
                   variant={module.status === 'Active' ? 'default' : 'secondary'}
                   className={
                     module.status === 'Active'
-                      ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white px-3 py-1'
-                      : 'bg-[#6B7280] text-white px-3 py-1'
+                      ? 'bg-[#10B981] text-white border-[#10B981] border-2 shadow-lg shadow-[#10B981]/30 px-3 py-1.5 flex items-center justify-center'
+                      : 'bg-[#6B7280] text-white px-3 py-1.5 flex items-center justify-center'
                   }
                 >
-                  {module.status === 'Active' ? 'Aktif' : 'Arşivlendi'}
+                  {module.status === 'Active' ? (
+                    <span className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      <span>Aktif</span>
+                    </span>
+                  ) : (
+                    <span className="whitespace-nowrap">Arşivlendi</span>
+                  )}
                 </Badge>
                 <div className="flex gap-2">
                   <Button
@@ -358,11 +365,11 @@ export function ModuleDetailPage() {
                     variant={useCase.status === 'Active' ? 'default' : 'secondary'}
                     className={
                       useCase.status === 'Active'
-                        ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                        : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
+                        ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30 border px-3 py-1.5 flex items-center justify-center'
+                        : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30 border px-3 py-1.5 flex items-center justify-center'
                     }
                   >
-                    {useCase.status === 'Active' ? 'Active' : 'Archived'}
+                    <span className="whitespace-nowrap">{useCase.status === 'Active' ? 'Aktif' : 'Arşivlenmiş'}</span>
                   </Badge>
                 </div>
                 {useCase.description && (
@@ -386,7 +393,7 @@ export function ModuleDetailPage() {
                     }}
                   >
                     <Eye className="w-4 h-4 mr-2" />
-                    View
+                    Görüntüle
                   </Button>
                 </div>
               </motion.div>
@@ -403,7 +410,7 @@ export function ModuleDetailPage() {
               className="bg-[#EF4444] hover:bg-[#DC2626] text-white"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete Module
+              Modülü Sil
             </Button>
             <ConfirmDeleteDialog
               open={deleteDialogOpen}
@@ -420,25 +427,30 @@ export function ModuleDetailPage() {
         <div className="bg-[#161B22]/60 backdrop-blur-md border border-[#30363D]/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Use Cases</h2>
-            <div className="flex flex-1 gap-4 items-center">
+            <div className="flex flex-1 gap-3 items-center">
+              {/* Search Icon Button */}
+              <div className="flex items-center justify-center w-10 h-10 bg-[#161B22] border border-[#30363D] rounded-xl">
+                <Search className="text-[#9CA3AF] w-5 h-5" />
+              </div>
+              
+              {/* Search Input */}
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9CA3AF] w-4 h-4" />
                 <Input
-                  placeholder="Search use cases..."
+                  placeholder="Use case ara..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 bg-[#161B22] border-[#30363D] text-[#E5E7EB]"
+                  className="h-10 rounded-xl pl-4 pr-4 bg-[#161B22] border-[#30363D] text-[#E5E7EB]"
                 />
               </div>
               
               <Select value={statusFilter === null ? 'All' : (statusFilter ? 'Active' : 'Archived')} onValueChange={handleFilterChange}>
                 <SelectTrigger className="w-[180px] bg-[#161B22] border-[#30363D] text-[#E5E7EB]">
-                  <SelectValue placeholder="Filter" />
+                  <SelectValue placeholder="Filtre" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Archived">Archived</SelectItem>
+                  <SelectItem value="All">Tümü</SelectItem>
+                  <SelectItem value="Active">Aktif</SelectItem>
+                  <SelectItem value="Archived">Arşivlenmiş</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -453,7 +465,7 @@ export function ModuleDetailPage() {
                           className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Create Use Case
+                          Use Case Oluştur
                         </Button>
                       </span>
                     </TooltipTrigger>
@@ -473,10 +485,10 @@ export function ModuleDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-[#30363D] hover:bg-[#21262D]/50">
-                    <TableHead className="text-[#E5E7EB]">Title</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Status</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Tasks</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Actions</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-left">Başlık</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Durum</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Tasks</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -505,10 +517,10 @@ export function ModuleDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-[#30363D] hover:bg-[#21262D]">
-                      <TableHead className="text-[#E5E7EB]">Title</TableHead>
-                      <TableHead className="text-[#E5E7EB]">Status</TableHead>
-                      <TableHead className="text-[#E5E7EB]">Tasks</TableHead>
-                      <TableHead className="text-[#E5E7EB]">Actions</TableHead>
+                      <TableHead className="text-[#E5E7EB] text-left">Başlık</TableHead>
+                      <TableHead className="text-[#E5E7EB] text-center">Durum</TableHead>
+                      <TableHead className="text-[#E5E7EB] text-center">Tasks</TableHead>
+                      <TableHead className="text-[#E5E7EB] text-center">İşlemler</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -520,10 +532,10 @@ export function ModuleDetailPage() {
                               <Layers className="w-8 h-8 text-[#8B5CF6]" />
                             </div>
                             <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">
-                              No use cases yet
+                              Henüz use case yok
                             </h3>
                             <p className="text-[#9CA3AF] mb-6 max-w-md">
-                              Create your first use case to start structuring work.
+                              İş yapısını oluşturmaya başlamak için ilk use case'inizi oluşturun.
                             </p>
                             {true && ( // hasPermission(PERMISSIONS.USECASE_CREATE) - temporarily bypassed for development
                               <TooltipProvider>
@@ -536,7 +548,7 @@ export function ModuleDetailPage() {
                                         className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Create Use Case
+                                        Use Case Oluştur
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
@@ -554,7 +566,7 @@ export function ModuleDetailPage() {
                     ) : (
                       useCases.map((useCase) => (
                         <TableRow key={useCase.id} className="border-[#30363D] hover:bg-[#21262D]">
-                          <TableCell className="text-[#E5E7EB]">
+                          <TableCell className="text-[#E5E7EB] text-left">
                             <button
                               onClick={() => {
                                 const targetPath = `/projects/${projectId}/modules/${moduleId}/usecases/${useCase.id}`;
@@ -562,30 +574,32 @@ export function ModuleDetailPage() {
                                 console.log('📍 UseCase:', { id: useCase.id, title: useCase.title });
                                 navigate(targetPath);
                               }}
-                              className="hover:text-[#8B5CF6] transition-colors cursor-pointer"
+                              className="hover:text-[#8B5CF6] transition-colors cursor-pointer text-left"
                             >
                               {useCase.title}
                             </button>
                           </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={useCase.status === 'Active' ? 'default' : 'secondary'}
-                              className={
-                                useCase.status === 'Active'
-                                  ? 'bg-[#10B981] text-white'
-                                  : 'bg-[#6B7280] text-white'
-                              }
-                            >
-                              {useCase.status}
-                            </Badge>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center">
+                              <Badge
+                                variant={useCase.status === 'Active' ? 'default' : 'secondary'}
+                                className={
+                                  useCase.status === 'Active'
+                                    ? 'bg-[#10B981] text-white px-3 py-1.5 flex items-center justify-center'
+                                    : 'bg-[#6B7280] text-white px-3 py-1.5 flex items-center justify-center'
+                                }
+                              >
+                                <span className="whitespace-nowrap">{useCase.status === 'Active' ? 'Aktif' : 'Arşivlenmiş'}</span>
+                              </Badge>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-[#9CA3AF]">
+                          <TableCell className="text-[#9CA3AF] text-center">
                             <span className="text-sm">
                               {useCase.taskCount || 0}
                             </span>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -598,7 +612,7 @@ export function ModuleDetailPage() {
                                 className="text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#21262D]"
                               >
                                 <Eye className="w-4 h-4 mr-2" />
-                                View
+                                Görüntüle
                               </Button>
                             </div>
                           </TableCell>

@@ -167,20 +167,36 @@ export class ApiClient implements IApiClient {
         headers,
       });
 
+      // 204 No Content durumunu özel olarak handle et
+      if (response.status === 204) {
+        return {
+          success: true,
+          data: undefined as any,
+          message: 'İşlem başarılı',
+        };
+      }
+
       // Response'u parse et
       let data: any;
       const contentType = response.headers.get('content-type');
       
+      // Response body'yi bir kez oku (clone edilemez çünkü zaten okunuyor)
+      const text = await response.text();
+      
       if (contentType && contentType.includes('application/json')) {
         try {
-          data = await response.json();
+          // Boş response body kontrolü
+          if (text.trim() === '') {
+            data = {};
+          } else {
+            data = JSON.parse(text);
+          }
         } catch (parseError) {
           // JSON parse hatası
           throw new CoreApiError('Sunucudan geçersiz yanıt alındı', response.status);
         }
       } else {
-        // JSON değilse text olarak oku
-        const text = await response.text();
+        // JSON değilse text olarak kullan
         data = { message: text || 'Bir hata oluştu' };
       }
 

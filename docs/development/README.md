@@ -71,6 +71,18 @@ Bu klasör TE4IT projesi için geliştirme dokümantasyonunu içerir.
 - Task management feature implementasyonu
 - Backend mimari kararları
 
+#### **EDUCATION_MODULE_SPECIFICATION.md** ⭐ YENİ!
+- **Eğitim modülü kapsamlı spesifikasyon dokümanı**
+- Kurs yönetimi (Admin/Kurum Müdürü)
+- Roadmap tabanlı öğrenme sistemi
+- Çoklu içerik desteği (Text, Video, Document, External Link)
+- İlerleme takibi ve dashboard
+- Detaylı kullanıcı senaryoları (6 adet)
+- API tasarımı ve endpoint'ler
+- Veri modeli ve entity yapısı
+- Yetkilendirme ve roller
+- Teknik detaylar ve geliştirme adımları
+
 ---
 
 ## 🎯 Hızlı Başlangıç
@@ -133,6 +145,7 @@ dotnet run
 - **Dokümantasyon**:
   - `BACKEND_DAILY_WORKFLOW.md`
   - `DEVELOPMENT.md`
+  - `EDUCATION_MODULE_SPECIFICATION.md` (Eğitim modülü için)
 - **Branch Pattern**: `feature/ahmet-*`
 - **Teknolojiler**: .NET 9, PostgreSQL, CQRS, MediatR
 
@@ -205,6 +218,9 @@ dotnet run
 
 ### "Token nasıl yönetilir?"
 → `COMMON_PATTERNS.md` → Bölüm 1
+
+### "Eğitim modülü nasıl çalışacak?"
+→ `EDUCATION_MODULE_SPECIFICATION.md` → Tüm doküman
 
 ---
 

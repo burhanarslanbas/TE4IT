@@ -124,34 +124,48 @@ export class UseCaseService {
 
   /**
    * Use case güncelle
+   * Backend 204 NoContent döndürüyor, bu yüzden başarılı olursa use case'i tekrar yükleyelim
    */
   static async updateUseCase(useCaseId: string, data: UpdateUseCaseRequest): Promise<UseCase> {
-    const response = await apiClient.put<BackendUseCase>(`/api/v1/UseCases/${useCaseId}`, data);
+    const response = await apiClient.put(`/api/v1/UseCases/${useCaseId}`, data);
     
-    if (response.success && response.data) {
-      // Backend response'unu frontend tipine çevir
-      return mapBackendUseCaseToFrontend(response.data);
+    if (response.success) {
+      // Backend 204 NoContent döndürüyor, güncellenmiş use case'i tekrar yükle
+      return await this.getUseCase(useCaseId);
     }
     
-    throw new Error('Use case güncellenemedi');
+    throw new Error(response.message || 'Use case güncellenemedi');
   }
 
   /**
    * Use case durumunu değiştir (Active/Archived)
-   * Backend { isActive: boolean } bekliyor
+   * Backend { isActive: boolean } bekliyor ve 204 NoContent döndürüyor
    */
   static async updateUseCaseStatus(useCaseId: string, isActive: boolean): Promise<BackendUseCase> {
-    const response = await apiClient.patch<BackendUseCase>(
+    const response = await apiClient.patch(
       `/api/v1/UseCases/${useCaseId}/status`, 
       { isActive }
     );
     
-    if (!response.success || !response.data) {
-      throw new Error('Use case durumu güncellenemedi');
+    if (!response.success) {
+      throw new Error(response.message || 'Use case durumu güncellenemedi');
     }
     
-    // Response'u döndür - caller refetch için kullanabilir
-    return response.data;
+    // Backend 204 NoContent döndürüyor, güncellenmiş use case'i tekrar yükle
+    const updatedUseCase = await this.getUseCase(useCaseId);
+    // Backend formatına çevir
+    return {
+      id: updatedUseCase.id,
+      moduleId: updatedUseCase.moduleId,
+      title: updatedUseCase.title,
+      description: updatedUseCase.description,
+      importantNotes: updatedUseCase.importantNotes,
+      isActive: updatedUseCase.status === 'Active',
+      startedDate: updatedUseCase.createdAt || new Date().toISOString(),
+      taskCount: updatedUseCase.taskCount,
+      createdDate: updatedUseCase.createdAt,
+      updatedDate: updatedUseCase.updatedAt,
+    };
   }
 
   /**

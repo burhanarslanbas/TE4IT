@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Button } from '../components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { ManuelCreateProjectTab } from '../components/projects/ManuelCreateProjectTab';
 import { AICreateProjectTab } from '../components/projects/AICreateProjectTab';
 import { ArrowLeft, Plus, Sparkles, FileText } from 'lucide-react';
@@ -123,39 +122,53 @@ export function CreateProjectPage() {
               </p>
             </div>
 
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'manual' | 'ai')} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#0D1117] border border-[#30363D]">
-                <TabsTrigger
-                  value="manual"
-                  className="data-[state=active]:bg-[#8B5CF6]/20 data-[state=active]:text-[#8B5CF6] data-[state=active]:border-[#8B5CF6]"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Manuel Oluştur
-                </TabsTrigger>
-                <TabsTrigger
-                  value="ai"
-                  className="data-[state=active]:bg-[#8B5CF6]/20 data-[state=active]:text-[#8B5CF6] data-[state=active]:border-[#8B5CF6]"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI ile Oluştur
-                </TabsTrigger>
-              </TabsList>
+            {/* Creation Mode Selection Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <Button
+                variant={activeTab === 'manual' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('manual')}
+                className={`flex-1 h-auto py-4 px-6 ${
+                  activeTab === 'manual'
+                    ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white border-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/30'
+                    : 'bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] hover:border-[#8B5CF6]/50'
+                } transition-all`}
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                <div className="text-left">
+                  <div className="font-semibold">Manuel Oluştur</div>
+                  <div className="text-xs opacity-80 mt-1">Kendiniz oluşturun</div>
+                </div>
+              </Button>
+              
+              <Button
+                variant={activeTab === 'ai' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('ai')}
+                className={`flex-1 h-auto py-4 px-6 ${
+                  activeTab === 'ai'
+                    ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white border-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/30'
+                    : 'bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] hover:border-[#8B5CF6]/50'
+                } transition-all`}
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                <div className="text-left">
+                  <div className="font-semibold">AI ile Oluştur</div>
+                  <div className="text-xs opacity-80 mt-1">Otomatik roadmap</div>
+                </div>
+              </Button>
+            </div>
 
-              <TabsContent value="manual" className="mt-0">
-                <ManuelCreateProjectTab
-                  onProjectCreated={handleProjectCreated}
-                  onCancel={handleCancel}
-                />
-              </TabsContent>
-
-              <TabsContent value="ai" className="mt-0">
-                <AICreateProjectTab
-                  onProjectCreated={handleProjectCreated}
-                  onCancel={handleCancel}
-                />
-              </TabsContent>
-            </Tabs>
+            {/* Content Based on Selected Mode */}
+            {activeTab === 'manual' ? (
+              <ManuelCreateProjectTab
+                onProjectCreated={handleProjectCreated}
+                onCancel={handleCancel}
+              />
+            ) : (
+              <AICreateProjectTab
+                onProjectCreated={handleProjectCreated}
+                onCancel={handleCancel}
+              />
+            )}
           </motion.div>
 
           {/* Help Text */}

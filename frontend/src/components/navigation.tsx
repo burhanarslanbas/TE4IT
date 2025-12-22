@@ -1,17 +1,11 @@
 import { motion } from "motion/react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Logo } from "./logo";
-import { ThemeToggle } from "./theme-toggle";
-import { useLanguage } from "../contexts/LanguageContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Globe } from "lucide-react";
+import { Home, BookOpen, FolderKanban, User, LogOut } from "lucide-react";
+import { TokenHelper } from "../services/auth";
+import type { User } from "../services/auth";
 
 interface NavigationProps {
   isAuthenticated?: boolean;
@@ -20,7 +14,16 @@ interface NavigationProps {
 
 export function Navigation({ isAuthenticated = false, onLogout }: NavigationProps) {
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useLanguage();
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const user = TokenHelper.getCurrentUser();
+      setCurrentUser(user);
+    }
+  }, [isAuthenticated]);
 
   return (
     <motion.nav
@@ -31,89 +34,99 @@ export function Navigation({ isAuthenticated = false, onLogout }: NavigationProp
     >
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Logo />
-          
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              {t('nav.features')}
-            </a>
-            <a href="#pricing" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              {t('nav.pricing')}
-            </a>
-            <a href="#why-us" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
-              {t('nav.whyUs')}
-            </a>
+          {/* Sol taraf: Logo */}
+          <div className="flex items-center">
+            <Logo />
           </div>
           
-          {/* Buttons */}
+          {/* Orta: Navigation Links */}
+          {isAuthenticated ? (
+            // Authenticated kullanıcılar için: Ana Sayfa, Eğitimler ve Projeler (kutucuk içinde)
+            <div className="hidden md:flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
+                onClick={() => navigate("/")}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Ana Sayfa
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
+                onClick={() => navigate("/education")}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Eğitimler
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
+                onClick={() => navigate("/projects")}
+              >
+                <FolderKanban className="w-4 h-4 mr-2" />
+                Projeler
+              </Button>
+            </div>
+          ) : (
+            // Guest kullanıcılar için: Sadece ana sayfada Özellikler, Fiyatlandırma, Neden Biz?
+            isHomePage && (
+              <div className="hidden md:flex items-center space-x-8">
+                <a href="#features" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
+                  Özellikler
+                </a>
+                <a href="#pricing" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
+                  Fiyatlandırma
+                </a>
+                <a href="#why-us" className="text-[#E5E7EB] hover:text-[#8B5CF6] transition-colors">
+                  Neden Biz?
+                </a>
+              </div>
+            )
+          )}
+          
+          {/* Sağ taraf: Hoşgeldiniz mesajı, Profil ve Çıkış Yap */}
           <div className="flex items-center space-x-4">
-            {/* Language Selector */}
-            <Select value={language} onValueChange={(value) => setLanguage(value as 'tr' | 'en')}>
-              <SelectTrigger className="w-[100px] h-9 bg-[#161B22] border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]">
-                <Globe className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[#161B22] border-[#30363D]">
-                <SelectItem value="tr" className="text-[#E5E7EB] focus:bg-[#8B5CF6]/10">
-                  🇹🇷 TR
-                </SelectItem>
-                <SelectItem value="en" className="text-[#E5E7EB] focus:bg-[#8B5CF6]/10">
-                  🇬🇧 EN
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <ThemeToggle />
-            
-            {/* Authentication buttons - Conditional rendering */}
             {isAuthenticated ? (
-              // Authenticated user buttons
+              // Authenticated user: Hoşgeldiniz mesajı, Profil ve Çıkış Yap
               <>
-                <Button 
-                  variant="ghost" 
-                  className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
-                  onClick={() => navigate("/trainings")}
-                >
-                  {t('nav.trainings')}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
-                  onClick={() => navigate("/projects")}
-                >
-                  {t('nav.projects')}
-                </Button>
-                <Button 
-                  variant="ghost" 
+                {currentUser && (
+                  <span className="hidden lg:block text-[#E5E7EB] text-sm">
+                    Hoşgeldiniz! <span className="text-[#8B5CF6] font-semibold">{currentUser.userName}</span>
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
                   onClick={() => navigate("/profile")}
                 >
-                  {t('nav.profile')}
+                  <User className="w-4 h-4 mr-2" />
+                  Profil
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-[#EF4444] hover:bg-[#EF4444]/10 border border-[#EF4444]/30"
                   onClick={onLogout}
                 >
-                  {t('nav.logout')}
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Çıkış Yap
                 </Button>
               </>
             ) : (
-              // Guest user buttons
+              // Guest user: Giriş Yap ve Ücretsiz Başla
               <>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-[#E5E7EB] hover:bg-[#8B5CF6]/10 border border-[#30363D]/50"
                   onClick={() => navigate("/login")}
                 >
-                  {t('nav.login')}
+                  Giriş Yap
                 </Button>
-                <Button 
+                <Button
                   className="bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90 shadow-lg shadow-[#8B5CF6]/25"
                   onClick={() => navigate("/register")}
                 >
-                  {t('nav.register')}
+                  Ücretsiz Başla
                 </Button>
               </>
             )}
