@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Navigation } from "./components/navigation";
 import { HeroSection } from "./components/hero-section";
 import { FeaturesSection } from "./components/features-section";
@@ -14,7 +14,12 @@ import { RegisterPage } from "./components/register-page";
 import { ProfilePage } from "./components/profile-page";
 import { ForgotPasswordPage } from "./components/forgot-password-page";
 import { ProjectsListPage } from "./pages/ProjectsListPage";
-import { TrainingsPage } from "./pages/TrainingsPage";
+import { CoursesListPage } from "./pages/CoursesListPage";
+import { CourseDetailPage } from "./pages/CourseDetailPage";
+import { CourseRoadmapPage } from "./pages/CourseRoadmapPage";
+import { CourseContentPage } from "./pages/CourseContentPage";
+import { MyCoursesPage } from "./pages/MyCoursesPage";
+import { CreateCoursePage } from "./pages/CreateCoursePage";
 import { ProjectDetailPage } from "./pages/projects/ProjectDetailPage/ProjectDetailPage";
 import { ModuleDetailPage } from "./pages/ModuleDetailPage";
 import { UseCaseDetailPage } from "./pages/UseCaseDetailPage";
@@ -87,6 +92,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
  */
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -120,11 +126,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         description: "Güvenli bir şekilde çıkış yaptınız.",
         duration: 2000,
       });
-      window.location.href = "/";
+      navigate("/");
     } catch (error) {
       console.error('Logout error:', error);
       setIsAuthenticated(false);
-      window.location.href = "/";
+      navigate("/");
     }
   };
 
@@ -165,8 +171,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
  * Ana Sayfa Bileşeni
  */
 const HomePage = () => {
+  const navigate = useNavigate();
+  
   const handleNavigateToRegister = () => {
-    window.location.href = "/register";
+    navigate("/register");
   };
 
   return (
@@ -186,15 +194,17 @@ const HomePage = () => {
  * Login Page Handler
  */
 const LoginPageWrapper = () => {
+  const navigate = useNavigate();
+  
   const handleLogin = async () => {
     try {
       toast.success("Giriş başarılı!", {
-        description: "Profil sayfasına yönlendiriliyorsunuz...",
+        description: "Projeler sayfasına yönlendiriliyorsunuz...",
         duration: 2000,
       });
       // Redirect with a small delay to show the toast
       setTimeout(() => {
-        window.location.href = "/profile";
+        navigate("/projects");
       }, 1000);
     } catch (error) {
       console.error('Login error:', error);
@@ -204,13 +214,13 @@ const LoginPageWrapper = () => {
   return (
     <LoginPage
       onNavigateToRegister={() => {
-        window.location.href = "/register";
+        navigate("/register");
       }}
       onNavigateToHome={() => {
-        window.location.href = "/";
+        navigate("/");
       }}
       onNavigateToForgotPassword={() => {
-        window.location.href = "/forgot-password";
+        navigate("/forgot-password");
       }}
       onLogin={handleLogin}
     />
@@ -221,13 +231,33 @@ const LoginPageWrapper = () => {
  * Register Page Handler
  */
 const RegisterPageWrapper = () => {
+  const navigate = useNavigate();
+  
   return (
     <RegisterPage
       onNavigateToLogin={() => {
-        window.location.href = "/login";
+        navigate("/login");
       }}
       onNavigateToHome={() => {
-        window.location.href = "/";
+        navigate("/");
+      }}
+    />
+  );
+};
+
+/**
+ * Forgot Password Page Handler
+ */
+const ForgotPasswordPageWrapper = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <ForgotPasswordPage
+      onNavigateToLogin={() => {
+        navigate("/login");
+      }}
+      onNavigateToHome={() => {
+        navigate("/");
       }}
     />
   );
@@ -237,6 +267,8 @@ const RegisterPageWrapper = () => {
  * Profile Page Handler
  */
 const ProfilePageWrapper = () => {
+  const navigate = useNavigate();
+  
   const handleLogout = async () => {
     try {
       // Token'ı temizle
@@ -245,17 +277,17 @@ const ProfilePageWrapper = () => {
         description: "Güvenli bir şekilde çıkış yaptınız.",
         duration: 2000,
       });
-      window.location.href = "/";
+      navigate("/");
     } catch (error) {
       console.error('Logout error:', error);
-      window.location.href = "/";
+      navigate("/");
     }
   };
 
   return (
     <ProfilePage
       onNavigateToHome={() => {
-        window.location.href = "/";
+        navigate("/");
       }}
       onLogout={handleLogout}
     />
@@ -265,7 +297,9 @@ const ProfilePageWrapper = () => {
 /**
  * Ana App Bileşeni
  */
-export default function App() {
+function AppContent() {
+  const navigate = useNavigate();
+  
   // API client'a unauthorized callback ekle (401 durumunda logout)
   useEffect(() => {
     apiClient.setUnauthorizedCallback(() => {
@@ -274,14 +308,12 @@ export default function App() {
         description: 'Lütfen tekrar giriş yapın.',
         duration: 3000,
       });
-      window.location.href = '/login';
+      navigate('/login');
     });
-  }, []);
+  }, [navigate]);
 
   return (
-    <ErrorBoundary>
-      <Router>
-        <Layout>
+    <Layout>
           <Routes>
           {/* Ana Sayfa */}
           <Route path="/" element={<HomePage />} />
@@ -311,14 +343,7 @@ export default function App() {
             path="/forgot-password" 
             element={
               <div className="min-h-screen bg-[#0D1117]">
-                <ForgotPasswordPage
-                  onNavigateToLogin={() => {
-                    window.location.href = "/login";
-                  }}
-                  onNavigateToHome={() => {
-                    window.location.href = "/";
-                  }}
-                />
+                <ForgotPasswordPageWrapper />
               </div>
             } 
           />
@@ -335,12 +360,72 @@ export default function App() {
             } 
           />
 
-          {/* Trainings List - Protected Route */}
+          {/* Trainings List - Protected Route (redirects to CoursesListPage) */}
           <Route 
             path="/trainings" 
             element={
               <ProtectedRoute>
-                <TrainingsPage />
+                <CoursesListPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Create Course - Protected Route */}
+          <Route 
+            path="/trainings/create" 
+            element={
+              <ProtectedRoute>
+                <CreateCoursePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Education Routes - Protected */}
+          <Route 
+            path="/education" 
+            element={
+              <ProtectedRoute>
+                <CoursesListPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Course Detail - Protected Route */}
+          <Route 
+            path="/education/courses/:courseId" 
+            element={
+              <ProtectedRoute>
+                <CourseDetailPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Course Roadmap - Protected Route */}
+          <Route 
+            path="/education/courses/:courseId/roadmap" 
+            element={
+              <ProtectedRoute>
+                <CourseRoadmapPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Course Content - Protected Route */}
+          <Route 
+            path="/education/courses/:courseId/steps/:stepId/contents/:contentId" 
+            element={
+              <ProtectedRoute>
+                <CourseContentPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* My Courses - Protected Route */}
+          <Route 
+            path="/education/my-courses" 
+            element={
+              <ProtectedRoute>
+                <MyCoursesPage />
               </ProtectedRoute>
             } 
           />
@@ -454,7 +539,18 @@ export default function App() {
           {/* 404 - Not Found */}
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Layout>
+    </Layout>
+  );
+}
+
+/**
+ * Ana App Bileşeni - Router ile sarmalanmış
+ */
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <Router>
+        <AppContent />
       </Router>
     </ErrorBoundary>
   );

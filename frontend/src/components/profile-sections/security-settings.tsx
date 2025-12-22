@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,6 +12,7 @@ import { AuthService } from "../../services/auth";
 import { ApiError } from "../../services/api";
 
 export function SecuritySettings() {
+  const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -91,7 +93,7 @@ export function SecuritySettings() {
           });
           // Redirect to login after 2 seconds
           setTimeout(() => {
-            window.location.href = "/login";
+            navigate("/login");
           }, 2000);
         } else {
           toast.error("Hata Oluştu", {

@@ -305,7 +305,7 @@ export function CreateTaskPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#E5E7EB] via-[#8B5CF6] to-[#2DD4BF] bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl font-bold text-[#8B5CF6] mb-3">
             Yeni Task Oluştur
           </h1>
           <p className="text-[#9CA3AF] text-lg">

@@ -246,8 +246,8 @@ export function TaskDetailPage() {
         >
           <div className="flex items-start justify-between gap-4 mb-6">
             <div className="flex-1 min-w-0">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-[#E5E7EB] via-[#8B5CF6] to-[#2DD4BF] bg-clip-text text-transparent mb-4">
-                {task.title}
+              <h1 className="text-4xl font-bold text-[#8B5CF6] mb-4">
+                {task?.title || 'Task Başlığı Yükleniyor...'}
               </h1>
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge className={`${typeConfig.color} border-0`}>

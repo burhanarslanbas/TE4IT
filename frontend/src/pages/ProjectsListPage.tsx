@@ -3,7 +3,7 @@
  * Route: /projects
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectService } from '../services/projectService';
@@ -23,14 +23,34 @@ export function ProjectsListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 10;
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search term
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(1);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
     loadProjects();
-  }, [page, statusFilter, searchTerm]);
+  }, [page, statusFilter, debouncedSearchTerm]);
 
   const loadProjects = async () => {
     try {
@@ -39,7 +59,7 @@ export function ProjectsListPage() {
         page,
         pageSize,
         isActive: statusFilter,
-        search: searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
       });
 
       setProjects(response.items);
@@ -62,7 +82,6 @@ export function ProjectsListPage() {
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setPage(1);
   };
 
   const handleFilterChange = (value: string) => {
@@ -157,12 +176,12 @@ export function ProjectsListPage() {
             >
               {/* Search Input */}
               <div className="relative flex-1 lg:flex-initial lg:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] w-4 h-4 pointer-events-none" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#6B7280] w-4 h-4 pointer-events-none z-10" />
                 <Input
                   placeholder="Proje ara..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-11 pr-4 bg-[#0D1117]/60 backdrop-blur-sm border-[#30363D]/80 text-[#E5E7EB] placeholder:text-[#6B7280] focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6]/30 transition-all h-10 rounded-lg"
+                  className="pl-12 pr-4 bg-[#0D1117]/60 backdrop-blur-sm border-[#30363D]/80 text-[#E5E7EB] placeholder:text-[#6B7280] focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6]/30 transition-all h-10 rounded-lg"
                 />
               </div>
 
@@ -238,17 +257,17 @@ export function ProjectsListPage() {
                             project.status === 'Active'
                               ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
                               : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
-                          } border px-2.5 py-1 flex-shrink-0`}
+                          } border px-3 py-1.5 flex-shrink-0`}
                         >
                           {project.status === 'Active' ? (
-                            <span className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
-                              <span className="text-xs font-medium">Aktif</span>
+                            <span className="flex items-center justify-center gap-1.5 px-0.5">
+                              <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse flex-shrink-0" />
+                              <span className="text-xs font-medium whitespace-nowrap">Aktif</span>
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1.5">
-                              <Archive className="w-3 h-3" />
-                              <span className="text-xs font-medium">Arşiv</span>
+                            <span className="flex items-center justify-center gap-1.5 px-0.5">
+                              <Archive className="w-3 h-3 flex-shrink-0" />
+                              <span className="text-xs font-medium whitespace-nowrap">Arşiv</span>
                             </span>
                           )}
                         </Badge>

@@ -110,33 +110,45 @@ export function UseCaseDetailPage() {
   const handleUpdate = async (data: EditUseCaseForm) => {
     if (!useCaseId) return;
     try {
+      console.log('[UPDATE USECASE] Starting update for use case:', useCaseId);
       await UseCaseService.updateUseCase(useCaseId, {
         title: data.title,
         description: data.description || undefined,
         importantNotes: data.importantNotes || undefined,
       });
+      console.log('[UPDATE USECASE] Successfully updated use case');
       toast.success('Use case güncellendi');
       setEditDialogOpen(false);
-      loadData();
+      await loadData();
     } catch (error: any) {
+      console.error('[UPDATE USECASE] Error:', error);
       toast.error('Use case güncellenemedi', {
         description: error.message || 'Bir hata oluştu',
       });
+      // Dialog açık kalsın, kullanıcı tekrar deneyebilir
     }
   };
 
   const handleDelete = async () => {
-    if (!useCaseId || !projectId || !moduleId) return;
+    if (!useCaseId || !projectId || !moduleId) {
+      throw new Error('Eksik parametreler');
+    }
     
-    console.log('[USECASE DELETE] Starting delete for use case:', useCaseId);
-    
-    await UseCaseService.deleteUseCase(useCaseId);
-    
-    console.log('[USECASE DELETE] Successfully deleted, navigating to module');
-    toast.success('Use case silindi');
-    
-    // Navigate to module detail page
-    navigate(`/projects/${projectId}/modules/${moduleId}`);
+    try {
+      console.log('[USECASE DELETE] Starting delete for use case:', useCaseId);
+      
+      await UseCaseService.deleteUseCase(useCaseId);
+      
+      console.log('[USECASE DELETE] Successfully deleted, navigating to module');
+      toast.success('Use case silindi');
+      
+      // Navigate to module detail page
+      navigate(`/projects/${projectId}/modules/${moduleId}`);
+    } catch (error: any) {
+      console.error('[USECASE DELETE] Error:', error);
+      // Hata mesajı ConfirmDeleteDialog tarafından gösterilecek
+      throw error;
+    }
   };
 
   const handleStatusChange = async (newIsActive: boolean) => {
@@ -195,7 +207,7 @@ export function UseCaseDetailPage() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
-          <p className="text-[#9CA3AF] text-lg">Loading use case...</p>
+          <p className="text-[#9CA3AF] text-lg">Use case yükleniyor...</p>
         </div>
       </div>
     );
@@ -218,7 +230,7 @@ export function UseCaseDetailPage() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link to="/projects" className="hover:text-[#8B5CF6] transition-colors">Projects</Link>
+                  <Link to="/projects" className="hover:text-[#8B5CF6] transition-colors">Projeler</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
@@ -253,7 +265,7 @@ export function UseCaseDetailPage() {
             className="mb-6 text-[#E5E7EB] hover:text-[#8B5CF6] hover:bg-[#21262D]/50 transition-all"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Module
+            Modüle Dön
           </Button>
         </motion.div>
 
@@ -271,19 +283,26 @@ export function UseCaseDetailPage() {
                   <Layers className="w-6 h-6 text-[#8B5CF6]" />
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-[#E5E7EB] to-[#9CA3AF] bg-clip-text text-transparent">
-                    {useCase.title}
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-[#E5E7EB]">
+                    {useCase?.title || 'Use Case Başlığı Yükleniyor...'}
                   </h1>
                   <div className="flex items-center gap-3 flex-wrap">
                     <Badge
                       variant={useCase.status === 'Active' ? 'default' : 'secondary'}
                       className={`${
                         useCase.status === 'Active'
-                          ? 'bg-gradient-to-r from-[#10B981] to-[#059669] text-white'
+                          ? 'bg-[#10B981] text-white border-[#10B981] border-2 shadow-lg shadow-[#10B981]/30'
                           : 'bg-[#6B7280] text-white'
-                      } px-3 py-1 text-sm font-medium`}
+                      } px-3 py-1.5 text-sm font-medium flex items-center justify-center`}
                     >
-                      {useCase.status === 'Active' ? 'Aktif' : 'Arşivlendi'}
+                      {useCase.status === 'Active' ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                          <span>Aktif</span>
+                        </span>
+                      ) : (
+                        'Arşivlendi'
+                      )}
                     </Badge>
                     <div className="flex gap-2">
                       <Button
@@ -329,25 +348,25 @@ export function UseCaseDetailPage() {
                       className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D] hover:border-[#8B5CF6]/50 transition-all"
                     >
                       <Edit className="w-4 h-4 mr-2" />
-                      Edit
+                      Düzenle
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-[#161B22] border-[#30363D] text-[#E5E7EB] max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle className="text-xl">Edit Use Case</DialogTitle>
+                      <DialogTitle className="text-xl">Use Case Düzenle</DialogTitle>
                       <DialogDescription className="text-[#9CA3AF]">
-                        Update the use case information. Changes will be saved immediately.
+                        Use case bilgilerini güncelleyin. Değişiklikler hemen kaydedilecektir.
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(handleUpdate)} className="space-y-5">
                       <div>
-                        <Label htmlFor="edit-title" className="text-[#E5E7EB] mb-2">Title *</Label>
+                        <Label htmlFor="edit-title" className="text-[#E5E7EB] mb-2">Başlık *</Label>
                         <Input
                           id="edit-title"
                           {...register('title', {
-                            required: 'Title is required',
-                            minLength: { value: 3, message: 'Title must be at least 3 characters' },
-                            maxLength: { value: 100, message: 'Title must be at most 100 characters' },
+                            required: 'Başlık gereklidir',
+                            minLength: { value: 3, message: 'Başlık en az 3 karakter olmalıdır' },
+                            maxLength: { value: 100, message: 'Başlık en fazla 100 karakter olabilir' },
                           })}
                           className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
                         />
@@ -357,13 +376,13 @@ export function UseCaseDetailPage() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <Label htmlFor="edit-description" className="text-[#E5E7EB]">Description</Label>
+                          <Label htmlFor="edit-description" className="text-[#E5E7EB]">Açıklama</Label>
                           <span className="text-xs text-[#6B7280]">{descriptionLength}/1000</span>
                         </div>
                         <Textarea
                           id="edit-description"
                           {...register('description', {
-                            maxLength: { value: 1000, message: 'Description must be at most 1000 characters' },
+                            maxLength: { value: 1000, message: 'Açıklama en fazla 1000 karakter olabilir' },
                           })}
                           className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[120px] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
                         />
@@ -373,16 +392,16 @@ export function UseCaseDetailPage() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <Label htmlFor="edit-notes" className="text-[#E5E7EB]">Important Notes</Label>
+                          <Label htmlFor="edit-notes" className="text-[#E5E7EB]">Önemli Notlar</Label>
                           <span className="text-xs text-[#6B7280]">{notesLength}/500</span>
                         </div>
                         <Textarea
                           id="edit-notes"
                           {...register('importantNotes', {
-                            maxLength: { value: 500, message: 'Important notes must be at most 500 characters' },
+                            maxLength: { value: 500, message: 'Önemli notlar en fazla 500 karakter olabilir' },
                           })}
                           className="bg-[#0D1117] border-[#30363D] text-[#E5E7EB] min-h-[100px] focus:ring-2 focus:ring-[#8B5CF6] transition-all"
-                          placeholder="⚠️ Important notes..."
+                          placeholder="⚠️ Önemli notlar..."
                         />
                         {errors.importantNotes && (
                           <p className="text-red-400 text-sm mt-1">{errors.importantNotes.message}</p>
@@ -395,10 +414,10 @@ export function UseCaseDetailPage() {
                           onClick={() => setEditDialogOpen(false)}
                           className="border-[#30363D] text-[#E5E7EB] hover:bg-[#21262D]"
                         >
-                          Cancel
+                          İptal
                         </Button>
                         <Button type="submit" className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white transition-all">
-                          Save Changes
+                          Değişiklikleri Kaydet
                         </Button>
                       </DialogFooter>
                     </form>
@@ -414,7 +433,7 @@ export function UseCaseDetailPage() {
                     className="bg-[#EF4444] hover:bg-[#DC2626] text-white transition-all"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    Sil
                   </Button>
                   <ConfirmDeleteDialog
                     open={deleteDialogOpen}
@@ -435,10 +454,10 @@ export function UseCaseDetailPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              className="bg-[#0D1117]/50 border border-[#30363D]/50 rounded-xl p-5 mb-4"
+              className="bg-[#0D1117]/50 border border-[#30363D]/50 rounded-xl p-6 mb-4"
             >
-              <h3 className="text-sm font-semibold text-[#9CA3AF] mb-3 uppercase tracking-wide">Description</h3>
-              <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap">{useCase.description}</p>
+              <h3 className="text-sm font-semibold text-[#9CA3AF] mb-4 uppercase tracking-wide">Açıklama</h3>
+              <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap px-2">{useCase.description}</p>
             </motion.div>
           )}
 
@@ -448,13 +467,13 @@ export function UseCaseDetailPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
-              className="bg-gradient-to-br from-[#F59E0B]/10 via-[#0D1117]/50 to-[#0D1117]/50 border border-[#F59E0B]/30 rounded-xl p-5"
+              className="bg-gradient-to-br from-[#F59E0B]/10 via-[#0D1117]/50 to-[#0D1117]/50 border border-[#F59E0B]/30 rounded-xl p-6"
             >
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-[#F59E0B] mb-3 uppercase tracking-wide">Important Notes</h3>
-                  <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap">{useCase.importantNotes}</p>
+                  <h3 className="text-sm font-semibold text-[#F59E0B] mb-4 uppercase tracking-wide">Önemli Notlar</h3>
+                  <p className="text-[#E5E7EB] leading-relaxed whitespace-pre-wrap px-2">{useCase.importantNotes}</p>
                 </div>
               </div>
             </motion.div>
@@ -513,7 +532,7 @@ export function UseCaseDetailPage() {
                         className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Create Task
+                        Task Oluştur
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -529,14 +548,21 @@ export function UseCaseDetailPage() {
 
           {/* Search */}
           <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
-              <Input
-                placeholder="Task ara..."
-                value={taskFilters.search}
-                onChange={(e) => handleTaskSearch(e.target.value)}
-                className="pl-10 bg-[#0D1117] border-[#30363D] text-[#E5E7EB] placeholder:text-[#6B7280] focus:ring-2 focus:ring-[#8B5CF6]"
-              />
+            <div className="flex gap-3 items-center">
+              {/* Search Icon Button */}
+              <div className="flex items-center justify-center w-10 h-10 bg-[#0D1117] border border-[#30363D] rounded-xl">
+                <Search className="text-[#6B7280] w-5 h-5" />
+              </div>
+              
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Input
+                  placeholder="Task ara..."
+                  value={taskFilters.search}
+                  onChange={(e) => handleTaskSearch(e.target.value)}
+                  className="h-10 rounded-xl pl-4 pr-4 bg-[#0D1117] border-[#30363D] text-[#E5E7EB] placeholder:text-[#6B7280] focus:ring-2 focus:ring-[#8B5CF6]"
+                />
+              </div>
             </div>
           </div>
 
@@ -586,11 +612,11 @@ export function UseCaseDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-[#30363D] hover:bg-[#21262D]/50">
-                    <TableHead className="text-[#E5E7EB]">Başlık</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Tip</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Durum</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Bitiş Tarihi</TableHead>
-                    <TableHead className="text-[#E5E7EB]">Aksiyonlar</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-left">Başlık</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Tip</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Durum</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Bitiş Tarihi</TableHead>
+                    <TableHead className="text-[#E5E7EB] text-center">Aksiyonlar</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -613,25 +639,29 @@ export function UseCaseDetailPage() {
 
                     return (
                       <TableRow key={task.id} className="border-[#30363D] hover:bg-[#21262D]/50 cursor-pointer">
-                        <TableCell className="text-[#E5E7EB] font-medium">{task.title}</TableCell>
-                        <TableCell>
-                          <Badge className={`${typeConfig.color} border-0`}>
-                            <span className="flex items-center gap-1.5">
-                              {typeConfig.icon}
-                              <span>{typeConfig.label}</span>
-                            </span>
-                          </Badge>
+                        <TableCell className="text-[#E5E7EB] font-medium text-left">{task.title}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <Badge className={`${typeConfig.color} border-0`}>
+                              <span className="flex items-center gap-1.5">
+                                {typeConfig.icon}
+                                <span>{typeConfig.label}</span>
+                              </span>
+                            </Badge>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={`${stateConfig.color} border-0`}>
-                            {stateConfig.label}
-                          </Badge>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <Badge className={`${stateConfig.color} border-0`}>
+                              {stateConfig.label}
+                            </Badge>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-[#9CA3AF]">
+                        <TableCell className="text-[#9CA3AF] text-center">
                           {task.dueDate ? new Date(task.dueDate).toLocaleDateString('tr-TR') : '-'}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
+                        <TableCell className="text-center">
+                          <div className="flex justify-center items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
