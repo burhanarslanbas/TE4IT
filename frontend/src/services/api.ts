@@ -16,6 +16,7 @@ import {
   clearTokens,
   isTokenExpired,
   isTokenValid,
+  isRefreshTokenExpired,
 } from '../utils/tokenManager';
 import { AuthService } from './auth';
 
@@ -88,6 +89,16 @@ export class ApiClient implements IApiClient {
         const refreshTokenValue = getRefreshToken();
         if (!refreshTokenValue) {
           throw new CoreApiError('Refresh token bulunamadı', 401);
+        }
+
+        // Refresh token expire olmuş mu kontrol et
+        if (isRefreshTokenExpired(refreshTokenValue)) {
+          console.warn('Refresh token süresi dolmuş, logout yapılıyor');
+          this.clearToken();
+          if (this.onUnauthorizedCallback) {
+            this.onUnauthorizedCallback();
+          }
+          throw new CoreApiError('Refresh token süresi dolmuş. Lütfen tekrar giriş yapın.', 401);
         }
 
         const response = await AuthService.refreshAccessToken(refreshTokenValue);

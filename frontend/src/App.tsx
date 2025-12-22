@@ -35,6 +35,7 @@ import { apiClient } from "./services/api";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useTokenRefresh } from "./hooks/useTokenRefresh";
 
 /**
  * Protected Route Bileşeni
@@ -120,7 +121,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const handleLogout = async () => {
     try {
       // Token'ı temizle
-      apiClient.clearToken();
+      await AuthService.logout();
       setIsAuthenticated(false);
       toast.info("Çıkış yapıldı", {
         description: "Güvenli bir şekilde çıkış yaptınız.",
@@ -133,6 +134,24 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       navigate("/");
     }
   };
+
+  // Token refresh hook - Access token'ı proaktif olarak yeniler
+  useTokenRefresh({
+    enabled: isAuthenticated,
+    onRefreshFailed: () => {
+      // Refresh token expire olduğunda logout yap
+      console.warn('Refresh token süresi doldu, logout yapılıyor');
+      handleLogout();
+      toast.error("Oturum süreniz doldu", {
+        description: "Güvenlik nedeniyle oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.",
+        duration: 5000,
+      });
+    },
+    onRefreshSuccess: () => {
+      // Token başarıyla yenilendi (sessizce)
+      console.log('Token başarıyla yenilendi');
+    },
+  });
 
   // Login, Register ve Profile sayfalarında Navigation gösterme
   const showNavigation = !["/login", "/register", "/profile"].includes(location.pathname);

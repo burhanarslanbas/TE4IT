@@ -332,21 +332,21 @@ export function CoursesListPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
               >
-                <div className="bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/5 backdrop-blur-md border border-[#8B5CF6]/30 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/5 backdrop-blur-md border border-[#8B5CF6]/30 rounded-xl p-4 shadow-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <BookOpen className="w-4 h-4 text-[#8B5CF6]" />
                     <span className="text-sm text-[#9CA3AF]">Toplam Kurs</span>
                   </div>
                   <p className="text-2xl font-bold text-[#E5E7EB]">{myCoursesStats.total}</p>
                 </div>
-                <div className="bg-gradient-to-br from-[#F59E0B]/20 to-[#F59E0B]/5 backdrop-blur-md border border-[#F59E0B]/30 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-[#F59E0B]/20 to-[#F59E0B]/5 backdrop-blur-md border-2 border-[#F59E0B] rounded-xl p-4 shadow-lg shadow-[#F59E0B]/20">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-[#F59E0B]" />
                     <span className="text-sm text-[#9CA3AF]">Devam Eden</span>
                   </div>
                   <p className="text-2xl font-bold text-[#E5E7EB]">{myCoursesStats.inProgress}</p>
                 </div>
-                <div className="bg-gradient-to-br from-[#10B981]/20 to-[#10B981]/5 backdrop-blur-md border border-[#10B981]/30 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-[#10B981]/20 to-[#10B981]/5 backdrop-blur-md border border-[#10B981]/30 rounded-xl p-4 shadow-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="w-4 h-4 text-[#10B981]" />
                     <span className="text-sm text-[#9CA3AF]">Tamamlanan</span>
