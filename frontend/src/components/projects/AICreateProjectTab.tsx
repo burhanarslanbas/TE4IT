@@ -18,7 +18,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { RoadmapPreview } from './RoadmapPreview';
 import { toast } from 'sonner';
-import { Sparkles, Search, Loader2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Search, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface AICreateProjectForm {
@@ -111,6 +111,7 @@ export function AICreateProjectTab({ onProjectCreated, onCancel }: AICreateProje
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [selectedItems, setSelectedItems] = useState<SelectedRoadmapItems>({
     modules: new Set(),
     useCases: new Set(),
@@ -363,20 +364,182 @@ export function AICreateProjectTab({ onProjectCreated, onCancel }: AICreateProje
         </div>
       </form>
 
-      {/* Loading State */}
+      {/* Loading State - Vortex Design */}
       {isSearching && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-[#161B22]/50 backdrop-blur-md border border-[#30363D]/50 rounded-xl p-8 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative rounded-2xl overflow-hidden bg-[#0D1117] border border-[#30363D]/50"
         >
-          <Loader2 className="w-12 h-12 text-[#8B5CF6] animate-spin mx-auto mb-4" />
-          <p className="text-[#E5E7EB] font-medium mb-2">AI analiz ediyor...</p>
-          <p className="text-[#9CA3AF] text-sm">
-            GitHub'da benzer projeler aranıyor ve roadmap oluşturuluyor.
-            <br />
-            Bu işlem 20-40 saniye sürebilir.
-          </p>
+          {/* Top Section - Title and Info */}
+          <div className="relative z-20 p-6 pb-4 border-b border-[#30363D]/30 bg-[#161B22]/80 backdrop-blur-sm">
+            <motion.h3
+              className="text-2xl font-bold text-white mb-2"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              AI Analiz Ediyor
+            </motion.h3>
+            <motion.p
+              className="text-[#9CA3AF] text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Lütfen bekleyin, bu işlem birkaç saniye sürebilir
+            </motion.p>
+          </div>
+
+          {/* Central Windows Dog Animation Section */}
+          <div className="relative h-80 flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#161B22] to-[#0D1117]">
+            {/* Animated Background Glow */}
+            <motion.div
+              className="absolute inset-0"
+              animate={{
+                background: [
+                  'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+                  'radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.15) 0%, transparent 70%)',
+                  'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+                ],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+
+            {/* Windows Dog Animation Container */}
+            <motion.div
+              className="relative z-10 flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* MP4 Video Player - AI Project Animation */}
+              <div className="relative w-full max-w-md h-64 rounded-lg overflow-hidden shadow-2xl bg-[#0D1117]">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="w-full h-full object-cover"
+                  style={{
+                    pointerEvents: 'none',
+                  }}
+                  onLoadedData={() => setVideoLoaded(true)}
+                  onCanPlay={() => setVideoLoaded(true)}
+                >
+                  <source src="/ai-project-animation.mp4" type="video/mp4" />
+                </video>
+                {/* Loading overlay - video yüklenene kadar */}
+                {!videoLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#0D1117]/80 backdrop-blur-sm">
+                    <motion.p
+                      className="text-[#9CA3AF] text-sm"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    >
+                      Animasyon yükleniyor...
+                    </motion.p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Bottom Section - Progress Steps */}
+          <div className="relative z-20 p-6 pt-4 border-t border-[#30363D]/30 bg-[#161B22]/80 backdrop-blur-sm">
+            <div className="space-y-3 mb-4">
+              {[
+                { text: 'GitHub\'da benzer projeler aranıyor', icon: '🔍', delay: 0.4 },
+                { text: 'Proje yapıları analiz ediliyor', icon: '📊', delay: 0.6 },
+                { text: 'Roadmap oluşturuluyor', icon: '✨', delay: 0.8 },
+              ].map((step, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: step.delay, type: 'spring', stiffness: 100 }}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-[#0D1117]/60 border border-[#30363D]/30"
+                >
+                  <motion.div
+                    className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#8B5CF6]/20 to-[#2DD4BF]/20 flex items-center justify-center text-lg"
+                    animate={{
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: step.delay,
+                    }}
+                  >
+                    {step.icon}
+                  </motion.div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium mb-1">{step.text}</p>
+                    <motion.div
+                      className="h-1 bg-[#30363D] rounded-full overflow-hidden"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: step.delay + 0.2 }}
+                    >
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#2DD4BF] rounded-full"
+                        initial={{ width: '0%' }}
+                        animate={{ width: '100%' }}
+                        transition={{
+                          duration: 1.5,
+                          delay: step.delay + 0.3,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                    </motion.div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Time Estimate */}
+            <motion.div
+              className="flex items-center justify-center gap-2 pt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              <div className="px-4 py-2 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/30">
+                <p className="text-[#8B5CF6] text-xs font-medium flex items-center gap-2">
+                  <Clock className="w-3 h-3" />
+                  Tahmini süre: 20-40 saniye
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Information Section at Bottom */}
+          <div className="relative z-20 p-6 pt-4 bg-[#0D1117]/60 border-t border-[#30363D]/30">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex items-center justify-center">
+                <span className="text-[#F59E0B] text-lg">💡</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-[#E5E7EB] text-sm font-medium mb-1">AI ile Otomatik Roadmap Oluşturma</p>
+                <p className="text-[#9CA3AF] text-xs leading-relaxed">
+                  AI, GitHub'daki benzer projeleri analiz ederek otomatik olarak roadmap oluşturur. 
+                  Bu işlem sırasında proje yapıları, modüller, use case'ler ve task'lar analiz edilir 
+                  ve size önerilir. Oluşturulan roadmap'i inceleyip istediğiniz öğeleri seçebilirsiniz.
+                </p>
+              </div>
+            </div>
+          </div>
         </motion.div>
       )}
 

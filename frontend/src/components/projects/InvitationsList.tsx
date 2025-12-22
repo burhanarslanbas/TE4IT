@@ -35,9 +35,12 @@ export function InvitationsList({ projectId, canManage, refreshKey }: Invitation
       const invitationsList = await ProjectService.getProjectInvitations(projectId);
       setInvitations(invitationsList);
     } catch (error: any) {
-      toast.error('Davetiyeler yüklenemedi', {
-        description: error.message || 'Bir hata oluştu',
-      });
+      // Davetiye özelliği henüz aktif değil, sessizce handle et
+      // toast.error('Davetiyeler yüklenemedi', {
+      //   description: error.message || 'Bir hata oluştu',
+      // });
+      console.log('Invitations feature not available yet:', error);
+      setInvitations([]);
     } finally {
       setLoading(false);
     }

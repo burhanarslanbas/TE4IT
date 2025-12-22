@@ -391,14 +391,15 @@ export class TaskService {
    * Önemli:
    * Backend enum numeric bekliyorsa string göndermek sorun çıkarır.
    * Bu yüzden state'i numeric'e çevirerek gönderiyoruz.
+   * Backend ChangeTaskStateRequest record'u NewState property'si bekliyor.
    */
   static async updateTaskState(taskId: string, state: TaskState): Promise<void> {
-    const payload = { state: toBackendTaskState(state) };
+    const payload = { NewState: toBackendTaskState(state) };
 
     const response = await apiClient.patch(`/api/v1/Tasks/${taskId}/state`, payload);
 
     if (!response.success) {
-      throw new Error('Task durumu güncellenemedi');
+      throw new Error(response.message || 'Task durumu güncellenemedi');
     }
   }
 

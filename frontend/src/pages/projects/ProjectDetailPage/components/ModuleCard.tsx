@@ -50,17 +50,17 @@ export function ModuleCard({ module, onClick, index }: ModuleCardProps) {
               module.status === 'Active'
                 ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
                 : 'bg-[#6B7280]/10 text-[#6B7280] border-[#6B7280]/30'
-            } border px-2.5 py-1 flex-shrink-0`}
+            } border px-3 py-1.5 flex-shrink-0`}
           >
             {module.status === 'Active' ? (
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
-                <span className="text-xs font-medium">Aktif</span>
+              <span className="flex items-center justify-center gap-1.5 px-0.5">
+                <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-xs font-medium whitespace-nowrap">Aktif</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1.5">
-                <Archive className="w-3 h-3" />
-                <span className="text-xs font-medium">Arşiv</span>
+              <span className="flex items-center justify-center gap-1.5 px-0.5">
+                <Archive className="w-3 h-3 flex-shrink-0" />
+                <span className="text-xs font-medium whitespace-nowrap">Arşiv</span>
               </span>
             )}
           </Badge>
