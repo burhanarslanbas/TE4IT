@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "vtys"
+rootProject.name = "TE4IT"
 include(":app")
  
