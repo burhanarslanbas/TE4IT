@@ -809,27 +809,38 @@ public static class Permissions
 
 ## 7. API Tasarımı
 
-### 7.1 Kurs Endpoint'leri
+Bu bölüm, mevcut API endpoint'lerinin **kesin** tanımlarını içerir. Tüm endpoint'ler `api/v1/education` base path'i altındadır.
 
-#### GET /api/v1/education/courses
-**Açıklama:** Tüm aktif kursları listeler  
-**Yetki:** Tüm kullanıcılar  
+---
+
+### 7.1 Courses (Kurslar) - CoursesController
+
+Base Route: `/api/v1/education/courses`
+
+---
+
+#### 7.1.1 GET /api/v1/education/courses
+**Açıklama:** Tüm aktif kursları sayfalı olarak listeler  
+**Yetki:** `[Authorize]` - Tüm authenticated kullanıcılar  
 **Query Parameters:**
-- `page` (int, default: 1)
-- `pageSize` (int, default: 10)
-- `search` (string, optional) - Title/Description arama
-- `sortBy` (string, optional) - "title", "createdAt"
-- `sortOrder` (string, optional) - "asc", "desc"
+- `page` (int, default: 1) - Sayfa numarası
+- `pageSize` (int, default: 10) - Sayfa başına kayıt
+- `search` (string?, optional) - Title veya description üzerinde arama
 
-**Response:**
+**Response Type:** `PagedResult<CourseListItemResponse>`
+**Status Codes:**
+- `200 OK` - Başarılı
+- `400 Bad Request` - Geçersiz parametreler
+
+**Response Örneği:**
 ```json
 {
   "items": [
     {
-      "id": "guid",
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "title": "C# Temelleri",
       "description": "C# programlama dilinin temel kavramları",
-      "thumbnailUrl": "https://...",
+      "thumbnailUrl": "https://example.com/thumb.jpg",
       "estimatedDurationMinutes": 480,
       "stepCount": 5,
       "enrollmentCount": 150,
@@ -843,95 +854,253 @@ public static class Permissions
 }
 ```
 
-#### GET /api/v1/education/courses/{courseId}
-**Açıklama:** Kurs detaylarını getirir  
-**Yetki:** Tüm kullanıcılar  
-**Response:**
+**CourseListItemResponse Schema:**
+```typescript
+{
+  id: Guid,
+  title: string,
+  description: string,
+  thumbnailUrl?: string,
+  estimatedDurationMinutes?: number,
+  stepCount?: number,
+  enrollmentCount: number,
+  createdAt: DateTime
+}
+```
+
+---
+
+#### 7.1.2 GET /api/v1/education/courses/{id}
+**Açıklama:** Kurs detaylarını getirir (roadmap ve kullanıcının enrollment durumu dahil)  
+**Yetki:** `[Authorize(Policy = "CourseView")]`  
+**Path Parameters:**
+- `id` (Guid) - Kurs ID'si
+
+**Response Type:** `CourseResponse`
+**Status Codes:**
+- `200 OK` - Başarılı
+- `404 Not Found` - Kurs bulunamadı
+
+**Response Örneği:**
 ```json
 {
-  "id": "guid",
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "title": "C# Temelleri",
-  "description": "...",
-  "thumbnailUrl": "https://...",
+  "description": "C# programlama dilinin temel kavramları",
+  "thumbnailUrl": "https://example.com/thumb.jpg",
+  "estimatedDurationMinutes": 480,
+  "stepCount": 5,
+  "enrollmentCount": 150,
+  "createdAt": "2025-01-15T10:00:00Z",
   "roadmap": {
-    "id": "guid",
-    "title": "C# Temelleri Yolu",
-    "description": "...",
+    "title": "C# Öğrenme Yolu",
+    "description": "Adım adım C# rehberi",
     "estimatedDurationMinutes": 480,
     "steps": [
       {
-        "id": "guid",
-        "title": "Adım 1: C# Nedir?",
+        "id": "step-guid-1",
+        "title": "Adım 1: Giriş",
+        "description": "C# nedir?",
         "order": 1,
         "isRequired": true,
         "estimatedDurationMinutes": 60,
-        "contentCount": 2
+        "contents": [
+          {
+            "id": "content-guid-1",
+            "title": "Video: C# Tanıtım",
+            "description": null,
+            "type": 2,
+            "order": 1,
+            "isRequired": true,
+            "content": null,
+            "linkUrl": "https://youtube.com/watch?v=...",
+            "embedUrl": "https://youtube.com/embed/...",
+            "platform": "youtube"
+          }
+        ]
       }
     ]
   },
   "userEnrollment": {
-    "isEnrolled": true,
+    "id": "enrollment-guid",
     "enrolledAt": "2025-01-20T10:00:00Z",
     "startedAt": "2025-01-20T10:05:00Z",
     "completedAt": null,
-    "progressPercentage": 40
-  }
+    "isActive": true
+  },
+  "progressPercentage": 45.5
 }
 ```
 
-#### POST /api/v1/education/courses
+**CourseResponse Schema:**
+```typescript
+{
+  id: Guid,
+  title: string,
+  description: string,
+  thumbnailUrl?: string,
+  estimatedDurationMinutes?: number,
+  stepCount: number,
+  enrollmentCount: number,
+  createdAt: DateTime,
+  roadmap?: RoadmapResponse,
+  userEnrollment?: EnrollmentResponse,
+  progressPercentage: decimal
+}
+```
+
+---
+
+#### 7.1.3 POST /api/v1/education/courses
 **Açıklama:** Yeni kurs oluşturur  
-**Yetki:** Administrator, OrganizationManager  
-**Request:**
+**Yetki:** `[Authorize(Policy = "CourseCreate")]` - Administrator, OrganizationManager
+
+**Request Body:** `CreateCourseCommand`
 ```json
 {
-  "title": "C# Temelleri",
-  "description": "C# programlama dilinin temel kavramları",
-  "thumbnailUrl": "https://example.com/thumb.jpg"
+  "title": "C# İleri Seviye",
+  "description": "İleri seviye C# konuları",
+  "thumbnailUrl": "https://example.com/advanced-csharp.jpg"
 }
 ```
 
-#### PUT /api/v1/education/courses/{courseId}
-**Açıklama:** Kursu günceller  
-**Yetki:** Administrator, OrganizationManager  
-**Request:** (POST ile aynı)
+**CreateCourseCommand Schema:**
+```typescript
+{
+  title: string,          // 3-200 karakter
+  description: string,    // Max 2000 karakter
+  thumbnailUrl?: string   // Geçerli URL
+}
+```
 
-#### DELETE /api/v1/education/courses/{courseId}
-**Açıklama:** Kursu siler (soft delete)  
-**Yetki:** Administrator
+**Response Type:** `CreateCourseCommandResponse`
+**Status Codes:**
+- `201 Created` - Başarılı, Location header ile `/courses/{id}` döner
+- `400 Bad Request` - Validation hatası
+- `403 Forbidden` - Yetki yok
 
-### 7.2 Roadmap Endpoint'leri
-
-#### POST /api/v1/education/courses/{courseId}/roadmap
-**Açıklama:** Kurs için roadmap oluşturur  
-**Yetki:** Administrator, OrganizationManager  
-**Request:**
+**Response:**
 ```json
 {
-  "title": "C# Temelleri Yolu",
-  "description": "Sıfırdan C# öğrenmek için adım adım rehber",
+  "id": "new-course-guid"
+}
+```
+
+---
+
+#### 7.1.4 PUT /api/v1/education/courses/{id}
+**Açıklama:** Kursu günceller  
+**Yetki:** `[Authorize(Policy = "CourseUpdate")]`
+
+**Path Parameters:**
+- `id` (Guid) - Kurs ID'si
+
+**Request Body:** `UpdateCourseRequest`
+```json
+{
+  "title": "C# Temelleri (Güncellenmiş)",
+  "description": "Yeni açıklama",
+  "thumbnailUrl": "https://example.com/new-thumb.jpg"
+}
+```
+
+**Response Type:** `204 No Content` (başarılı)
+**Status Codes:**
+- `204 No Content` - Başarılı
+- `400 Bad Request` - Validation hatası
+- `404 Not Found` - Kurs bulunamadı
+
+---
+
+#### 7.1.5 DELETE /api/v1/education/courses/{id}
+**Açıklama:** Kursu siler (Soft Delete - IsActive=false)  
+**Yetki:** `[Authorize(Policy = "CourseDelete")]` - Sadece Administrator
+
+**Path Parameters:**
+- `id` (Guid) - Kurs ID'si
+
+**Response Type:** `204 No Content`
+**Status Codes:**
+- `204 No Content` - Başarılı
+- `404 Not Found` - Kurs bulunamadı
+
+---
+
+### 7.2 Roadmaps - RoadmapsController
+
+Base Route: `/api/v1/education/courses/{courseId}`
+
+---
+
+#### 7.2.1 GET /api/v1/education/courses/{courseId}/roadmap
+**Açıklama:** Kursun roadmap'ini getirir  
+**Yetki:** `[Authorize(Policy = "RoadmapView")]`
+
+**Path Parameters:**
+- `courseId` (Guid)
+
+**Response Type:** `RoadmapResponse`
+**Status Codes:**
+- `200 OK`
+- `404 Not Found`
+
+**Response Örneği:**
+```json
+{
+  "title": "C# Öğrenme Yolu",
+  "description": "Sıfırdan ileri seviyeye C#",
   "estimatedDurationMinutes": 480,
   "steps": [
     {
-      "title": "Adım 1: C# Nedir?",
-      "description": "C# programlama diline giriş",
+      "id": "step-guid",
+      "title": "Adım 1: Başlangıç",
+      "description": "C# nedir?",
+      "order": 1,
+      "isRequired": true,
+      "estimatedDurationMinutes": 60,
+      "contents": [...]
+    }
+  ]
+}
+```
+
+---
+
+#### 7.2.2 GET /api/v1/education/courses/{courseId}/roadmap/steps
+**Açıklama:** Sadece roadmap adımlarını döner (Optimizasyon için)  
+**Yetki:** `[Authorize(Policy = "RoadmapView")]`
+
+**Response Type:** `IReadOnlyList<StepResponse>`
+
+---
+
+#### 7.2.3 POST /api/v1/education/courses/{courseId}/roadmap
+**Açıklama:** Kurs için roadmap oluşturur  
+**Yetki:** `[Authorize(Policy = "RoadmapCreate")]`
+
+**Request Body:** `CreateRoadmapCommand`
+```json
+{
+  "courseId": "course-guid",  // Path'ten gelir, body'de override edilebilir
+  "title": "Roadmap Başlığı",
+  "description": "Açıklama",
+  "estimatedDurationMinutes": 480,
+  "steps": [
+    {
+      "title": "Adım 1",
+      "description": "...",
       "order": 1,
       "isRequired": true,
       "estimatedDurationMinutes": 60,
       "contents": [
         {
-          "type": 1,
-          "title": "C# Nedir? - Giriş Yazısı",
-          "content": "<h1>C# Nedir?</h1><p>...</p>",
+          "type": 2,  // ContentType enum: 1=Text, 2=VideoLink, 3=DocumentLink, 4=ExternalLink
+          "title": "Video",
+          "description": null,
           "order": 1,
-          "isRequired": true
-        },
-        {
-          "type": 2,
-          "title": "C# Tanıtım Videosu",
-          "linkUrl": "https://www.youtube.com/watch?v=...",
-          "order": 2,
-          "isRequired": true
+          "isRequired": true,
+          "content": null,
+          "linkUrl": "https://youtube.com/watch?v=..."
         }
       ]
     }
@@ -939,64 +1108,178 @@ public static class Permissions
 }
 ```
 
-#### PUT /api/v1/education/courses/{courseId}/roadmap
-**Açıklama:** Roadmap'i günceller  
-**Yetki:** Administrator, OrganizationManager
-
-#### GET /api/v1/education/courses/{courseId}/roadmap
-**Açıklama:** Roadmap detaylarını getirir  
-**Yetki:** Tüm kullanıcılar
-
-### 7.3 Kayıt Endpoint'leri
-
-#### POST /api/v1/education/courses/{courseId}/enroll
-**Açıklama:** Kursa kayıt olur  
-**Yetki:** Tüm kullanıcılar  
-**Response:**
-```json
+**CreateRoadmapCommand Schema:**
+```typescript
 {
-  "id": "guid",
-  "courseId": "guid",
-  "userId": "guid",
-  "enrolledAt": "2025-01-20T10:00:00Z",
-  "startedAt": null,
-  "completedAt": null
+  courseId: Guid,
+  title: string,
+  description?: string,
+  estimatedDurationMinutes: number,
+  steps: StepDto[]
+}
+
+StepDto {
+  title: string,
+  description?: string,
+  order: number,
+  isRequired: boolean,
+  estimatedDurationMinutes: number,
+  contents: ContentDto[]
+}
+
+ContentDto {
+  type: ContentType (1|2|3|4),
+  title: string,
+  description?: string,
+  order: number,
+  isRequired: boolean,
+  content?: string,    // Type=1 (Text) için zorunlu
+  linkUrl?: string     // Type=2,3,4 için zorunlu
 }
 ```
 
-#### GET /api/v1/education/enrollments
-**Açıklama:** Kullanıcının kayıtlarını listeler  
-**Yetki:** Kullanıcı kendi kayıtlarını görüntüleyebilir  
-**Query Parameters:**
-- `status` (string, optional) - "active", "completed", "all"
+**Response Type:** `CreateRoadmapCommandResponse`
+**Status Codes:**
+- `201 Created`
+- `400 Bad Request`
+- `403 Forbidden`
+- `404 Not Found` - Kurs bulunamadı
 
-### 7.4 İlerleme Endpoint'leri
+---
 
-#### GET /api/v1/education/courses/{courseId}/progress
-**Açıklama:** Kurs bazında ilerleme bilgisini getirir  
-**Yetki:** Kullanıcı kendi ilerlemesini görüntüleyebilir  
+#### 7.2.4 PUT /api/v1/education/courses/{courseId}/roadmap
+**Açıklama:** Roadmap'i günceller  
+**Yetki:** `[Authorize(Policy = "RoadmapUpdate")]`
+
+**Request Body:** `UpdateRoadmapCommand` (CreateRoadmapCommand ile aynı yapı)
+
+**Response Type:** `204 No Content`
+**Status Codes:**
+- `204 No Content`
+- `400 Bad Request`
+- `404 Not Found`
+
+---
+
+### 7.3 Enrollments (Kayıtlar) - EnrollmentsController
+
+Base Route: `/api/v1/education`
+
+---
+
+#### 7.3.1 POST /api/v1/education/courses/{courseId}/enroll
+**Açıklama:** Kullanıcıyı kursa kaydeder  
+**Yetki:** `[Authorize]` - Tüm kullanıcılar
+
+**Path Parameters:**
+- `courseId` (Guid)
+
+**Request Body:** Yok (courseId path'ten alınır, userId auth'tan)
+
+**Response Type:** `EnrollInCourseCommandResponse`
+**Status Codes:**
+- `201 Created`
+- `400 Bad Request` - Zaten kayıtlı veya kurs bulunamadı
+- `404 Not Found`
+
 **Response:**
 ```json
 {
-  "courseId": "guid",
-  "enrollmentId": "guid",
-  "progressPercentage": 60,
-  "completedSteps": 3,
-  "totalSteps": 5,
-  "timeSpentMinutes": 240,
+  "enrollmentId": "new-enrollment-guid",
+  "enrolledAt": "2025-01-27T10:00:00Z"
+}
+```
+
+---
+
+#### 7.3.2 GET /api/v1/education/enrollments
+**Açıklama:** Kullanıcının kurs kayıtlarını listeler  
+**Yetki:** `[Authorize]`
+
+**Query Parameters:**
+- `status` (string?, default: "all") - "active", "completed", "all"
+
+**Response Type:** `IReadOnlyList<EnrollmentListItemResponse>`
+**Status Codes:**
+- `200 OK`
+- `400 Bad Request`
+
+**Response:**
+```json
+[
+  {
+    "id": "enrollment-guid",
+    "courseId": "course-guid",
+    "courseTitle": "C# Temelleri",
+    "courseDescription": "...",
+    "thumbnailUrl": "...",
+    "enrolledAt": "2025-01-20T10:00:00Z",
+    "startedAt": "2025-01-20T10:05:00Z",
+    "completedAt": null,
+    "isActive": true,
+    "progressPercentage": 45.5
+  }
+]
+```
+
+**EnrollmentListItemResponse Schema:**
+```typescript
+{
+  id: Guid,
+  courseId: Guid,
+  courseTitle: string,
+  courseDescription: string,
+  thumbnailUrl?: string,
+  enrolledAt: DateTime,
+  startedAt?: DateTime,
+  completedAt?: DateTime,
+  isActive: boolean,
+  progressPercentage: decimal
+}
+```
+
+---
+
+### 7.4 Progress (İlerleme) - ProgressController
+
+Base Route: `/api/v1/education`
+
+---
+
+#### 7.4.1 GET /api/v1/education/courses/{courseId}/progress
+**Açıklama:** Kullanıcının belirtilen kurstaki detaylı ilerleme bilgisi  
+**Yetki:** `[Authorize(Policy = "ProgressView")]`
+
+**Path Parameters:**
+- `courseId` (Guid)
+
+**Response Type:** `CourseProgressResponse`
+**Status Codes:**
+- `200 OK`
+- `404 Not Found` - Enrollment bulunamadı
+
+**Response:**
+```json
+{
+  "courseId": "course-guid",
+  "courseTitle": "C# Temelleri",
+  "progressPercentage": 60.0,
   "steps": [
     {
-      "stepId": "guid",
-      "title": "Adım 1: C# Nedir?",
+      "stepId": "step-guid",
+      "title": "Adım 1",
       "order": 1,
-      "isCompleted": true,
-      "completedAt": "2025-01-20T11:00:00Z",
+      "progressPercentage": 100.0,
+      "completedContentCount": 2,
+      "totalContentCount": 2,
       "contents": [
         {
-          "contentId": "guid",
-          "title": "C# Nedir? - Giriş Yazısı",
+          "contentId": "content-guid",
+          "title": "Video 1",
           "isCompleted": true,
-          "completedAt": "2025-01-20T10:30:00Z"
+          "completedAt": "2025-01-20T10:30:00Z",
+          "timeSpentMinutes": 15,
+          "watchedPercentage": 100
         }
       ]
     }
@@ -1004,51 +1287,150 @@ public static class Permissions
 }
 ```
 
-#### POST /api/v1/education/contents/{contentId}/complete
-**Açıklama:** İçeriği tamamlandı olarak işaretler  
-**Yetki:** Kayıtlı kullanıcılar  
-**Request:**
-```json
+**CourseProgressResponse Schema:**
+```typescript
 {
-  "timeSpentMinutes": 30
+  courseId: Guid,
+  courseTitle: string,
+  progressPercentage: decimal,
+  steps: StepProgressItem[]
+}
+
+StepProgressItem {
+  stepId: Guid,
+  title: string,
+  order: number,
+  progressPercentage: decimal,
+  completedContentCount: number,
+  totalContentCount: number,
+  contents: ContentProgressItem[]
+}
+
+ContentProgressItem {
+  contentId: Guid,
+  title: string,
+  isCompleted: boolean,
+  completedAt?: DateTime,
+  timeSpentMinutes?: number,
+  watchedPercentage?: number
 }
 ```
 
-#### POST /api/v1/education/contents/{contentId}/video-progress
-**Açıklama:** Video içeriği için ilerleme kaydı (opsiyonel, real-time tracking için)  
-**Yetki:** Kayıtlı kullanıcılar  
-**Request:**
-```json
-{
-  "watchedPercentage": 85,      // İzlenen yüzde (0-100)
-  "timeSpentSeconds": 1200,      // Geçirilen süre (saniye)
-  "isCompleted": false           // Kullanıcı manuel tamamladı mı?
-}
-```
+---
 
-**Not:** Bu endpoint opsiyoneldir. Video izlenirken periyodik olarak çağrılabilir. `isCompleted: true` gönderildiğinde içerik tamamlanmış sayılır.
+#### 7.4.2 GET /api/v1/education/progress/dashboard
+**Açıklama:** Kullanıcının genel eğitim ilerleme özeti  
+**Yetki:** `[Authorize(Policy = "ProgressView")]`
 
-#### GET /api/v1/education/progress/dashboard
-**Açıklama:** Kullanıcının genel ilerleme dashboard'unu getirir  
-**Yetki:** Kullanıcı kendi dashboard'unu görüntüleyebilir  
+**Response Type:** `ProgressDashboardResponse`
+**Status Codes:**
+- `200 OK`
+
 **Response:**
 ```json
 {
-  "totalCourses": 5,
-  "completedCourses": 2,
-  "activeCourses": 3,
-  "totalTimeSpentMinutes": 1200,
-  "courses": [
+  "totalCourses": 3,
+  "activeCourses": 2,
+  "completedCourses": 1,
+  "totalTimeSpentMinutes": 450,
+  "enrollments": [
     {
-      "courseId": "guid",
-      "title": "C# Temelleri",
-      "progressPercentage": 60,
-      "status": "active",
-      "lastAccessedAt": "2025-01-25T10:00:00Z"
+      "enrollmentId": "enrollment-guid",
+      "courseId": "course-guid",
+      "progressPercentage": 45.5,
+      "enrolledAt": "2025-01-20T10:00:00Z",
+      "startedAt": "2025-01-20T10:05:00Z",
+      "completedAt": null
     }
   ]
 }
 ```
+
+---
+
+#### 7.4.3 POST /api/v1/education/contents/{contentId}/complete
+**Açıklama:** İçeriği tamamlandı olarak işaretler  
+**Yetki:** `[Authorize(Policy = "ProgressUpdate")]`
+
+**Path Parameters:**
+- `contentId` (Guid)
+
+**Request Body:** `CompleteContentRequest`
+```json
+{
+  "courseId": "course-guid",
+  "timeSpentMinutes": 15,
+  "watchedPercentage": 100
+}
+```
+
+**CompleteContentRequest Schema:**
+```typescript
+{
+  courseId: Guid,
+  timeSpentMinutes?: number,
+  watchedPercentage?: number
+}
+```
+
+**Response Type:** `CompleteContentCommandResponse`
+**Status Codes:**
+- `200 OK`
+- `400 Bad Request`
+- `404 Not Found`
+
+**Response:**
+```json
+{
+  "progressId": "progress-guid",
+  "isStepCompleted": true,
+  "isCourseCompleted": false
+}
+```
+
+---
+
+#### 7.4.4 POST /api/v1/education/contents/{contentId}/video-progress
+**Açıklama:** Video izleme ilerlemesini kaydeder (Opsiyonel, real-time tracking)  
+**Yetki:** `[Authorize(Policy = "ProgressUpdate")]`
+
+**Path Parameters:**
+- `contentId` (Guid)
+
+**Request Body:** `UpdateVideoProgressRequest`
+```json
+{
+  "courseId": "course-guid",
+  "watchedPercentage": 75,
+  "timeSpentSeconds": 450,
+  "isCompleted": false
+}
+```
+
+**UpdateVideoProgressRequest Schema:**
+```typescript
+{
+  courseId: Guid,
+  watchedPercentage: number,  // 0-100
+  timeSpentSeconds: number,
+  isCompleted: boolean        // default: false
+}
+```
+
+**Response Type:** `UpdateVideoProgressCommandResponse`
+**Status Codes:**
+- `200 OK`
+- `400 Bad Request`
+- `404 Not Found`
+
+**Response:**
+```json
+{
+  "progressId": "progress-guid"
+}
+```
+
+**Not:** Bu endpoint her 10-30 saniyede bir çağrılabilir. `isCompleted: true` gönderildiğinde içerik tamamlanmış sayılır.
 
 ---
 
