@@ -105,11 +105,41 @@ export class ApiClient implements IApiClient {
         
         // Yeni token'ları kaydet
         this.setToken(response.accessToken, response.expiresAt);
-        saveRefreshToken(response.refreshToken);
+        saveRefreshToken(response.refreshToken, response.refreshExpires);
 
         return response.accessToken;
       } catch (error) {
-        // Refresh başarısız, logout yap
+        // Network error mu kontrol et
+        const isNetworkError = 
+          (error instanceof CoreApiError && error.code === 'NETWORK_ERROR') ||
+          (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) ||
+          (error instanceof Error && (
+            error.message.includes('ERR_CONNECTION_REFUSED') || 
+            error.message.includes('ERR_NETWORK_CHANGED') ||
+            error.message.includes('ERR_INTERNET_DISCONNECTED') ||
+            error.message.includes('network') ||
+            error.message.includes('NetworkError')
+          ));
+        
+        if (isNetworkError) {
+          // Network hatası → logout yapma, sadece error'ı fırlat
+          // Üst seviyede retry mekanizması olabilir
+          console.warn('Refresh token çağrısı network hatası verdi:', error);
+          throw error; // Network error → logout yapma
+        }
+        
+        // Gerçek 401/403 → logout yap
+        if (error instanceof CoreApiError && (error.status === 401 || error.status === 403)) {
+          console.warn('Refresh token geçersiz veya süresi dolmuş, logout yapılıyor');
+          this.clearToken();
+          if (this.onUnauthorizedCallback) {
+            this.onUnauthorizedCallback();
+          }
+          throw error;
+        }
+        
+        // Diğer hatalar (bilinmeyen) → güvenli tarafta kal, logout yap
+        console.error('Refresh token hatası (bilinmeyen):', error);
         this.clearToken();
         if (this.onUnauthorizedCallback) {
           this.onUnauthorizedCallback();
@@ -162,9 +192,9 @@ export class ApiClient implements IApiClient {
       const url = this.joinUrl(this.baseURL, endpoint);
 
       // Headers'ı hazırla
-      const headers: HeadersInit = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers as Record<string, string> || {}),
       };
 
       // Eğer token varsa Authorization header'ına ekle
@@ -249,7 +279,7 @@ export class ApiClient implements IApiClient {
         if (response.status === 401 && retryOn401) {
           try {
             // Token'ı yenile ve isteği tekrar dene
-            const newToken = await this.refreshToken();
+            await this.refreshToken();
             
             // Yeni token ile isteği tekrar gönder (sadece bir kez)
             return this.request<T>(endpoint, options, false);
@@ -287,8 +317,18 @@ export class ApiClient implements IApiClient {
         throw error;
       }
 
-      // Network hatası
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      // Network hatası - daha kapsamlı kontrol
+      const isNetworkError = 
+        (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) ||
+        (error instanceof Error && (
+          error.message.includes('ERR_CONNECTION_REFUSED') ||
+          error.message.includes('ERR_NETWORK_CHANGED') ||
+          error.message.includes('ERR_INTERNET_DISCONNECTED') ||
+          error.message.includes('network') ||
+          error.message.includes('NetworkError')
+        ));
+
+      if (isNetworkError) {
         throw new CoreApiError(
           'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.',
           0,

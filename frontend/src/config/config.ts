@@ -3,6 +3,8 @@
  * Environment'a göre API base URL'ini belirler
  */
 
+/// <reference types="vite/client" />
+
 // API Base URL'i environment'a göre belirle
 const getApiBaseUrl = (): string => {
   const env = import.meta.env.VITE_APP_ENV;
@@ -44,12 +46,12 @@ export const API_ENDPOINTS = {
   USERS: `${API_BASE_URL}/api/v1/users`
 };
 
-// Log configuration (development only)
-if (APP_ENV === 'development') {
-  console.log('🔧 API Configuration:', {
-    API_BASE_URL,
-    FRONTEND_URL,
-    APP_ENV
-  });
-}
+// Log configuration (all environments - for debugging)
+console.log('🔧 API Configuration:', {
+  API_BASE_URL,
+  FRONTEND_URL,
+  APP_ENV,
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  VITE_APP_ENV: import.meta.env.VITE_APP_ENV
+});
 

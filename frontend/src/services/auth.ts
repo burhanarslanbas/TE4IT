@@ -115,7 +115,7 @@ export class AuthService {
       if (response.success && response.data) {
         // Token'ları güvenli şekilde kaydet (sessionStorage)
         saveToken(response.data.accessToken, response.data.expiresAt);
-        saveRefreshToken(response.data.refreshToken);
+        saveRefreshToken(response.data.refreshToken, response.data.refreshExpires);
         apiClient.setToken(response.data.accessToken, response.data.expiresAt);
         
         return response.data;
@@ -148,7 +148,7 @@ export class AuthService {
       if (response.success && response.data) {
         // Token'ları güvenli şekilde kaydet (sessionStorage)
         saveToken(response.data.accessToken, response.data.expiresAt);
-        saveRefreshToken(response.data.refreshToken);
+        saveRefreshToken(response.data.refreshToken, response.data.refreshExpires);
         apiClient.setToken(response.data.accessToken, response.data.expiresAt);
         
         return response.data;

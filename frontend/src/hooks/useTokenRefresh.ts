@@ -11,7 +11,7 @@ import {
   getTimeUntilRefresh,
   isRefreshTokenExpired 
 } from '../utils/tokenManager';
-import { AuthService } from '../services/auth';
+import { AuthService, ApiError } from '../services/auth';
 import { apiClient } from '../services/api';
 
 interface UseTokenRefreshOptions {
@@ -95,7 +95,27 @@ export function useTokenRefresh(options: UseTokenRefreshOptions = {}) {
     } catch (error) {
       console.error('Token yenileme hatası:', error);
       
-      // Refresh token expire olmuşsa veya geçersizse, logout yap
+      // Network error kontrolü
+      const isNetworkError = 
+        (error instanceof ApiError && error.code === 'NETWORK_ERROR') ||
+        (error instanceof Error && (
+          error.message.includes('fetch') ||
+          error.message.includes('ERR_CONNECTION_REFUSED') ||
+          error.message.includes('ERR_NETWORK_CHANGED') ||
+          error.message.includes('ERR_INTERNET_DISCONNECTED') ||
+          error.message.includes('network') ||
+          error.message.includes('NetworkError')
+        ));
+      
+      if (isNetworkError) {
+        // Network hatası → logout yapma, sadece log
+        console.warn('Token yenileme network hatası, retry yapılacak');
+        // Retry mekanizması burada olabilir veya üst seviyede handle edilir
+        // Şimdilik sadece log, logout yapma
+        return; // Network error → logout yapma
+      }
+      
+      // Gerçek 401/403 veya refresh token expired → logout yap
       if (onRefreshFailed) {
         onRefreshFailed();
       }
