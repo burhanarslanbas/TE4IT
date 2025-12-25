@@ -6,6 +6,7 @@
 const TOKEN_KEY = 'te4it_token';
 const REFRESH_TOKEN_KEY = 'te4it_refresh_token';
 const TOKEN_EXPIRY_KEY = 'te4it_token_expiry';
+const REFRESH_TOKEN_EXPIRY_KEY = 'te4it_refresh_token_expiry';
 
 /**
  * Token'ı sessionStorage'a kaydet (localStorage'dan daha güvenli)
@@ -32,9 +33,12 @@ export function saveToken(token: string, expiresAt?: string): void {
 /**
  * Refresh token'ı kaydet
  */
-export function saveRefreshToken(refreshToken: string): void {
+export function saveRefreshToken(refreshToken: string, expiresAt?: string): void {
   try {
     sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    if (expiresAt) {
+      sessionStorage.setItem(REFRESH_TOKEN_EXPIRY_KEY, expiresAt);
+    }
   } catch (error) {
     console.error('Refresh token kaydedilemedi:', error);
   }
@@ -72,6 +76,7 @@ export function clearTokens(): void {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_EXPIRY_KEY);
   } catch (error) {
     console.error('Token temizlenemedi:', error);
   }
@@ -163,12 +168,28 @@ export function isTokenValid(): boolean {
  * Refresh token'ın expiry date'ini çıkar
  */
 export function getRefreshTokenExpiry(refreshToken?: string | null): Date | null {
+  // Önce sessionStorage'dan kaydedilmiş expiry'yi kontrol et
+  try {
+    const storedExpiry = sessionStorage.getItem(REFRESH_TOKEN_EXPIRY_KEY);
+    if (storedExpiry) {
+      const expiryDate = new Date(storedExpiry);
+      if (!isNaN(expiryDate.getTime())) {
+        return expiryDate;
+      }
+    }
+  } catch (error) {
+    console.error('Refresh token expiry okuma hatası:', error);
+  }
+
+  // Eğer kaydedilmiş expiry yoksa, refresh token'ı JWT olarak parse etmeyi dene
+  // (Backend'den gelen refresh token JWT değil, bu yüzden bu genellikle çalışmayacak)
   const tokenToCheck = refreshToken || getRefreshToken();
   
   if (!tokenToCheck) {
     return null;
   }
 
+  // JWT parse denemesi (backward compatibility için)
   return getTokenExpiry(tokenToCheck);
 }
 
@@ -179,10 +200,14 @@ export function isRefreshTokenExpired(refreshToken?: string | null): boolean {
   const expiry = getRefreshTokenExpiry(refreshToken);
   
   if (!expiry) {
+    // Expiry bilgisi yoksa, güvenli tarafta kal ve expired olarak işaretle
+    // Ancak bu durumda refresh token'ı backend'e gönderip kontrol etmek daha iyi olur
     return true;
   }
 
-  return expiry < new Date();
+  // 5 dakika buffer ekle (token yenileme için)
+  const bufferTime = 5 * 60 * 1000; // 5 dakika
+  return expiry.getTime() - bufferTime < Date.now();
 }
 
 /**
@@ -291,7 +316,6 @@ export function getTimeUntilRefresh(token?: string | null): number | null {
         const totalLifetime = expiryTime - issuedAt;
         // Token'ın %80'i dolduğunda yenile (kalan sürenin %20'si kaldığında)
         const refreshThreshold = 0.2;
-        const refreshTime = totalLifetime * refreshThreshold;
         
         // Şu anki zamandan itibaren ne kadar süre sonra yenileme zamanı gelir?
         const timeSinceIssued = now - issuedAt;
